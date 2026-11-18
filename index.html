@@ -800,6 +800,43 @@ dialog.confirmer .btn--rouge { --bg: #a93226; --fg: #fff; }
 }
 
 
+/* ---------- Ex-libris des auteurs (remplace les portraits) ---------- */
+.portrait {
+    container-type: inline-size;
+    background: var(--fiche);
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 14px 26px rgba(0,0,0,.45);
+    border-radius: 2px;
+}
+.portrait__cadre {
+    position: absolute; inset: 7%;
+    border: 1px solid #a8863a; outline: 3px double rgba(168, 134, 58, .55); outline-offset: 3cqi;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden;
+}
+.portrait .portrait__initiales {
+    position: static; display: block; color: #234b3e;
+    font: 400 34cqi/1 var(--f-titre); letter-spacing: -.02em;
+}
+.portrait__mention {
+    font: 700 6.2cqi/1 var(--f-machine); color: #8a6a2c; letter-spacing: .12em;
+    margin-top: 5cqi; display: none;
+}
+.portrait__dos {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+    display: none; align-items: flex-end; justify-content: center; gap: 1.6cqi;
+    border-bottom: 3.2cqi solid var(--noyer);
+}
+.portrait__dos i { display: block; width: 7cqi; background: var(--toile); border-radius: 1px 1px 0 0; box-shadow: inset -1.2cqi 0 0 rgba(0,0,0,.25); }
+@container (min-width: 140px) {
+    .portrait__mention, .portrait__dos { display: flex; }
+    .portrait__cadre { justify-content: flex-start; padding-top: 24cqi; }
+}
+.carte-auteur:hover .portrait__dos i { transform: translateY(-3cqi); }
+.portrait__dos i { transition: transform .35s var(--ease-livre); }
+.carte-auteur:hover .portrait__dos i:nth-child(2) { transition-delay: .03s; } .carte-auteur:hover .portrait__dos i:nth-child(3) { transition-delay: .06s; } .carte-auteur:hover .portrait__dos i:nth-child(4) { transition-delay: .09s; }
+.galerie--grande .portrait { aspect-ratio: 5 / 6; }
+.galerie--grande .portrait__initiales, .auteur-tete .portrait__initiales { font-size: 34cqi; }
+
 /* ---------- Démo téléphone ---------- */
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--salle); }
 button.chip { font: inherit; background: transparent; cursor: pointer; display: inline-flex; align-items: center; border: 1px solid var(--filet-fort); border-radius: 999px; padding: .38rem .8rem; font-size: .88rem; color: var(--papier-doux); transition: all .18s; }
@@ -840,7 +877,6 @@ fieldset.field legend { margin-bottom: .5rem; padding: 0; }
     .retour { justify-items: start; margin-bottom: .6rem; }
     .registre { grid-template-columns: 1fr; }
     .galerie--grande { grid-template-columns: repeat(2, 1fr); gap: 1.6rem 1rem; }
-    .galerie--grande .portrait__initiales { font-size: 3rem; }
     .auteur-tete .portrait { max-width: 160px; }
     .chiffres { gap: 1.5rem; }
     .section { padding-top: 3.5rem; }
@@ -989,9 +1025,14 @@ function bookHTML(b, o = {}) {
         <div class="book__cover"><div class="cover-fallback" aria-hidden="true"><span class="cover-fallback__titre">${esc(b.titre)}</span><span class="cover-fallback__orn"></span><span class="cover-fallback__auteur">${esc(a.nom)}</span></div>${couverture(b)}</div></div>${meta}</${tag}>`;
 }
 /* Photo de couverture d'après l'ISBN (Open Library). Si elle n'existe pas, la couverture en toile reste visible. */
+/* Photos de couvertures : servies depuis le dossier covers/ du site (rapide). Sans photo, la couverture en toile reste visible. */
 const COUVERTURES = window.BOOKLORE_COUVERTURES === true;
-const couverture = (b) => (COUVERTURES && b.isbn ? `<img src="https://covers.openlibrary.org/b/isbn/${encodeURIComponent(b.isbn)}-L.jpg?default=false" alt="" loading="lazy" decoding="async" onload="this.naturalWidth > 20 ? this.classList.add('is-loaded') : this.remove()" onerror="this.remove()">` : '');
-const portraitHTML = (a, cl = '') => `<span class="portrait ${cl}"><span class="portrait__initiales" aria-hidden="true">${esc(initiales(a.nom))}</span></span>`;
+const couverture = (b) => (COUVERTURES && /^[0-9X]{10,13}$/.test(b.isbn || '') ? `<img src="covers/${b.isbn}.jpg" alt="" loading="lazy" decoding="async" onload="this.naturalWidth > 20 ? this.classList.add('is-loaded') : this.remove()" onerror="this.remove()">` : '');
+/* Ex-libris de l'auteur : son monogramme, et en bas les dos de ses livres du catalogue */
+const portraitHTML = (a, cl = '') => {
+    const dos = livresAuteur(a.id).slice(0, 7).map((b) => { const c = crc32(b.titre); return `<i style="--toile:${toile(b.titre)};height:${58 + (c % 34)}%"></i>`; }).join('');
+    return `<span class="portrait ${cl}" aria-hidden="true"><span class="portrait__cadre"><span class="portrait__initiales">${esc(initiales(a.nom))}</span><span class="portrait__mention">Ex-libris</span>${dos ? `<span class="portrait__dos">${dos}</span>` : ''}</span></span>`;
+};
 const vide = (titre, texte, lien, libelle) => `<div class="vide"><h3>${titre}</h3><p>${texte}</p>${lien ? `<a href="${lien}" class="btn">${libelle}</a>` : ''}</div>`;
 const shelf = (livres, vt = true) => `<div class="shelf">${livres.map((b) => `<div class="shelf-cell">${bookHTML(b, { vt })}</div>`).join('')}</div>`;
 function rayonHTML(g) {
@@ -1144,7 +1185,7 @@ function formLivre(b) {
 VUES.ajouter = () => formLivre(null);
 VUES.modifier = (id) => (livre(id) ? formLivre(livre(id)) : null);
 
-VUES.auteurs = () => `<div class="page"><header class="tete-page"><div><h1>Galerie des auteurs</h1><p>${pl(D.auteurs.length, 'auteur')} au catalogue. Dans l'application, les portraits viennent de Wikipédia.</p></div><a href="#nouvel-auteur" class="btn">Ajouter un auteur</a></header>
+VUES.auteurs = () => `<div class="page"><header class="tete-page"><div><h1>Galerie des auteurs</h1><p>${pl(D.auteurs.length, 'auteur')} au catalogue, par ordre alphabétique. Chaque ex-libris montre les livres de l'auteur présents dans nos rayons.</p></div><a href="#nouvel-auteur" class="btn">Ajouter un auteur</a></header>
     <div class="galerie galerie--grande">${[...D.auteurs].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map((a) => `<a href="#auteur-${a.id}" class="carte-auteur">${portraitHTML(a)}<div><h3>${esc(a.nom)}</h3><p>${pl(livresAuteur(a.id).length, 'livre')}<br>${esc([a.nat, a.an].filter(Boolean).join(', '))}</p></div></a>`).join('')}</div></div>`;
 
 VUES.auteur = (id) => {

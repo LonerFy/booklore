@@ -1,0 +1,2 @@
+Une photo de couverture par livre, nommée d'après son ISBN : 9780385474542.jpg
+Remplie par outils/couvertures.mjs (node outils/couvertures.mjs).
