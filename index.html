@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12241e">
+<meta name="description" content="BookLore, la bibliothèque du département IRT : catalogue, rayons, auteurs, prêts et retours.">
+<title>BookLore</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2312241e'/%3E%3Cpath d='M6 9c4-1.5 7-1 10 1.2C19 8 22 7.5 26 9v14c-4-1.5-7-1-10 1.2C13 22 10 21.5 6 23z' fill='none' stroke='%23c9a34f' stroke-width='1.8'/%3E%3Cpath d='M16 10.2v14' stroke='%23c9a34f' stroke-width='1.8'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/libre-caslon-display-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+[hidden] { display: none !important; }
+body { margin: 0; }
+@font-face { font-family: "Caslon Display"; src: url("fonts/libre-caslon-display-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Caslon Display"; src: url("fonts/libre-caslon-display-latin-ext-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0100-024F, U+1E00-1EFF; }
+@font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk-latin-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk-latin-600-normal.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("fonts/courier-prime-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("fonts/courier-prime-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* ==========================================================================
+   BookLore — salle de lecture du département
+   Toile vert bibliothèque, dorure des dos de livres, encre violette des tampons.
+   ========================================================================== */
+
+/* ---------- Jetons ---------- */
+:root {
+    --salle: #12241e;          /* fond : la salle de lecture */
+    --salle-2: #18302a;        /* surfaces posées dessus */
+    --toile: #234b3e;          /* toile de reliure */
+    --filet: rgba(232, 228, 214, 0.12);
+    --filet-fort: rgba(232, 228, 214, 0.22);
+    --papier: #e8e4d6;         /* texte principal */
+    --papier-doux: #a8b3a5;    /* texte secondaire */
+    --dorure: #c9a34f;
+    --dorure-vive: #e6c97f;
+    --encre: #8a74d6;          /* encre violette des tampons (sur fond sombre) */
+    --encre-fiche: #5a3fa3;    /* même encre, sur la fiche en carton */
+    --retard: #d9654f;
+    --rayon: #6fbf8e;          /* disponible en rayon */
+    --fiche: #f3efe2;          /* carton des fiches d'emprunt */
+    --fiche-encre: #2b2a33;
+    --noyer: #3a281b;          /* bois des étagères */
+
+    --f-titre: "Caslon Display", Georgia, "Times New Roman", serif;
+    --f-texte: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --f-machine: "Courier Prime", "Courier New", monospace;
+
+    --page: min(1180px, 100% - 2 * max(20px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)));
+    --haut: env(safe-area-inset-top, 0px);
+    --ease-livre: cubic-bezier(.2, .8, .2, 1);
+    color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--salle);
+    color: var(--papier);
+    font: 400 1rem/1.6 var(--f-texte);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+/* Lumière de lampe de lecture, fixe en haut de page */
+body::after {
+    content: "";
+    position: fixed;
+    inset: -20vh -10vw auto;
+    height: 80vh;
+    background: radial-gradient(ellipse 55% 60% at 50% 0%, rgba(230, 201, 127, 0.09), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration-color: var(--filet-fort); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--dorure); }
+:focus-visible { outline: 2px solid var(--dorure-vive); outline-offset: 3px; border-radius: 2px; }
+::selection { background: var(--dorure); color: var(--salle); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+h1, h2, h3 { font-family: var(--f-titre); font-weight: 400; line-height: 1.08; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.4rem, 5.5vw, 4.4rem); }
+h2 { font-size: clamp(1.7rem, 3.2vw, 2.4rem); }
+h3 { font-size: 1.35rem; }
+p { margin: 0 0 1em; }
+
+.page { width: var(--page); margin-inline: auto; position: relative; z-index: 1; }
+main { position: relative; z-index: 1; padding-bottom: 6rem; }
+
+/* ---------- Transitions entre pages (navigateurs récents) ---------- */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .35s; }
+::view-transition-group(*) { animation-duration: .55s; animation-timing-function: var(--ease-livre); }
+
+/* ==========================================================================
+   Barre de navigation
+   ========================================================================== */
+.topbar {
+    position: sticky;
+    top: var(--haut);
+    z-index: 50;
+    background: color-mix(in srgb, var(--salle) 82%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--filet);
+}
+.topbar__inner { width: var(--page); margin-inline: auto; display: flex; align-items: center; gap: 2rem; height: 68px; }
+.logo { display: flex; align-items: center; gap: .6rem; text-decoration: none; }
+.logo svg { width: 30px; height: 30px; color: var(--dorure); }
+.logo span { font: 400 1.55rem/1 var(--f-titre); color: var(--dorure-vive); letter-spacing: .01em; }
+.nav { display: flex; gap: 1.6rem; margin-right: auto; }
+.nav a { position: relative; text-decoration: none; color: var(--papier-doux); font-weight: 500; font-size: .95rem; padding: .4rem 0; transition: color .2s; }
+.nav a:hover, .nav a[aria-current="page"] { color: var(--papier); }
+/* Le lien actif porte un signet doré qui pend sous la barre */
+.nav a[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 13px);
+    width: 10px;
+    height: 16px;
+    translate: -50% 0;
+    background: var(--dorure);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+}
+.topbar__actions { display: flex; align-items: center; gap: .75rem; }
+.search-trigger {
+    display: flex; align-items: center; gap: .6rem;
+    background: transparent; color: var(--papier-doux);
+    border: 1px solid var(--filet-fort); border-radius: 999px;
+    padding: .45rem .55rem .45rem .9rem; font: inherit; font-size: .9rem; cursor: pointer;
+    transition: border-color .2s, color .2s;
+}
+.search-trigger:hover { border-color: var(--dorure); color: var(--papier); }
+.search-trigger kbd { font: 500 .75rem var(--f-texte); border: 1px solid var(--filet-fort); border-radius: 5px; padding: 0 .4rem; }
+.menu-toggle { display: none; }
+
+/* ==========================================================================
+   Boutons et champs
+   ========================================================================== */
+.btn {
+    --bg: var(--dorure); --fg: #1a1608;
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    background: var(--bg); color: var(--fg);
+    border: 1px solid transparent; border-radius: 6px;
+    padding: .7rem 1.15rem; font: 600 .95rem/1 var(--f-texte);
+    text-decoration: none; cursor: pointer;
+    transition: background .2s, transform .15s, border-color .2s;
+}
+.btn:hover { background: var(--dorure-vive); }
+.btn:active { transform: translateY(1px); }
+.btn--ghost { --bg: transparent; --fg: var(--papier); border-color: var(--filet-fort); }
+.btn--ghost:hover { background: rgba(232, 228, 214, .06); border-color: var(--dorure); }
+.btn--danger { --bg: transparent; --fg: var(--retard); border-color: color-mix(in srgb, var(--retard) 50%, transparent); }
+.btn--danger:hover { background: color-mix(in srgb, var(--retard) 14%, transparent); }
+.btn--small { padding: .5rem .8rem; font-size: .85rem; }
+.btn svg { width: 16px; height: 16px; }
+
+.field { display: grid; gap: .4rem; }
+.field label, .field .label { font-weight: 500; font-size: .9rem; color: var(--papier); }
+.field .hint { font-size: .82rem; color: var(--papier-doux); }
+.input, .select, .textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, .18);
+    border: 1px solid var(--filet-fort);
+    border-radius: 6px;
+    color: var(--papier);
+    font: inherit;
+    padding: .7rem .85rem;
+    transition: border-color .2s, background .2s;
+}
+.textarea { min-height: 140px; resize: vertical; line-height: 1.55; }
+.select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--papier-doux) 50%), linear-gradient(135deg, var(--papier-doux) 50%, transparent 50%); background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 2.2rem; }
+.select option { background: var(--salle-2); }
+.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--dorure); background: rgba(0, 0, 0, .28); }
+.is-invalid { border-color: var(--retard) !important; }
+.error { color: var(--retard); font-size: .85rem; }
+.error::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; margin-right: .45rem; vertical-align: middle; }
+
+/* Étiquettes cochables (genres, filtres) */
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+.chip span, a.chip {
+    display: inline-flex; align-items: center; gap: .4rem;
+    border: 1px solid var(--filet-fort); border-radius: 999px;
+    padding: .38rem .8rem; font-size: .88rem; color: var(--papier-doux);
+    text-decoration: none; transition: all .18s; user-select: none;
+}
+.chip:hover span, a.chip:hover { border-color: var(--dorure); color: var(--papier); }
+.chip input:checked + span, a.chip.is-on { background: var(--dorure); border-color: var(--dorure); color: #1a1608; }
+.chip input:focus-visible + span { outline: 2px solid var(--dorure-vive); outline-offset: 2px; }
+.chip small { opacity: .7; }
+
+/* ==========================================================================
+   LE LIVRE EN 3D — élément signature
+   ========================================================================== */
+.book {
+    --w: 150px;
+    --d: 16px;                 /* épaisseur du livre */
+    --toile: #2f5d4a;
+    display: block;
+    width: var(--w);
+    text-decoration: none;
+    perspective: 900px;
+}
+.book__3d {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    transform-style: preserve-3d;
+    transform: rotateY(-24deg) rotateX(2deg);
+    transition: transform .55s var(--ease-livre);
+}
+.book:hover .book__3d, .book:focus-visible .book__3d { transform: rotateY(-6deg) translateY(-10px) translateZ(14px); }
+.book:focus-visible { outline: none; }
+.book:focus-visible .book__cover { outline: 2px solid var(--dorure-vive); outline-offset: 4px; }
+
+.book__cover, .book__back, .book__pages { position: absolute; }
+.book__cover {
+    inset: 0;
+    transform: translateZ(calc(var(--d) / 2));
+    border-radius: 2px 5px 5px 2px;
+    overflow: hidden;
+    background: var(--toile);
+    box-shadow: 0 1px 0 rgba(255,255,255,.06) inset;
+    container-type: inline-size;
+}
+.book__back {
+    inset: 0;
+    transform: translateZ(calc(var(--d) / -2));
+    background: color-mix(in srgb, var(--toile) 70%, black);
+    border-radius: 2px 5px 5px 2px;
+    box-shadow: 18px 20px 30px rgba(0, 0, 0, .55);
+}
+.book__pages {
+    top: 3px; bottom: 3px; right: 0;
+    width: var(--d);
+    transform: translateX(calc(var(--d) / 2 - 2px)) rotateY(90deg);
+    background: repeating-linear-gradient(90deg, #f2ecdc 0 1px, #cfc6ae 1px 2px);
+}
+/* Pli de la reliure et reflet sur la couverture */
+.book__cover::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+        linear-gradient(90deg, rgba(0,0,0,.35) 0, rgba(255,255,255,.18) 3%, rgba(0,0,0,.12) 6%, transparent 9%),
+        linear-gradient(115deg, transparent 55%, rgba(255,255,255,.07) 70%, transparent 85%);
+    pointer-events: none;
+    z-index: 2;
+}
+.book__cover img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: 1;
+    opacity: 0; transition: opacity .5s;
+}
+.book__cover img.is-loaded { opacity: 1; }
+
+/* Couverture de secours : toile, filets dorés, titre gravé */
+.cover-fallback {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 14% 11% 11% 15%;
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px),
+        radial-gradient(circle at 30% 20%, rgba(255,255,255,.08), transparent 60%),
+        var(--toile);
+    color: var(--dorure-vive);
+    text-align: center;
+}
+.cover-fallback::before {
+    content: ""; position: absolute; inset: 7% 7% 7% 11%;
+    border: 1px solid color-mix(in srgb, var(--dorure) 70%, transparent);
+    outline: 1px solid color-mix(in srgb, var(--dorure) 35%, transparent);
+    outline-offset: 3px;
+}
+.cover-fallback__titre { font: 400 10.5cqi/1.12 var(--f-titre); text-wrap: balance; position: relative; }
+.cover-fallback__orn { width: 26%; height: 1px; margin: 0 auto; background: currentColor; opacity: .6; position: relative; }
+.cover-fallback__auteur { font: 500 6.2cqi/1.3 var(--f-texte); letter-spacing: .04em; opacity: .85; position: relative; }
+
+.book__meta { margin-top: 1.1rem; display: grid; gap: .15rem; }
+.book__titre { font: 400 1.05rem/1.25 var(--f-titre); color: var(--papier); text-wrap: balance; }
+.book__auteur { font-size: .85rem; color: var(--papier-doux); }
+.statut { font-family: var(--f-texte); display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--papier-doux); }
+.statut::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--rayon); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rayon) 20%, transparent); }
+.statut--sorti::before { background: var(--encre); box-shadow: 0 0 0 3px color-mix(in srgb, var(--encre) 22%, transparent); }
+.statut--retard { color: var(--retard); }
+.statut--retard::before { background: var(--retard); box-shadow: 0 0 0 3px color-mix(in srgb, var(--retard) 22%, transparent); }
+
+/* Pastilles d'état (bonus : couleur selon l'état) */
+.etat { font-family: var(--f-texte); display: inline-flex; align-items: center; font-size: .78rem; font-weight: 600; padding: .18rem .55rem; border-radius: 4px; border: 1px solid; }
+.etat--neuf { color: #8fd4a8; border-color: rgba(143, 212, 168, .4); background: rgba(143, 212, 168, .08); }
+.etat--bon { color: var(--dorure-vive); border-color: rgba(230, 201, 127, .35); background: rgba(230, 201, 127, .07); }
+.etat--abime { color: #f09a85; border-color: rgba(240, 154, 133, .4); background: rgba(240, 154, 133, .08); }
+
+/* ==========================================================================
+   Étagère : rangée de livres posés sur une planche
+   ========================================================================== */
+.shelf {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 3.2rem 2.2rem;
+    padding: 1rem 0 0;
+}
+.shelf .book { --w: 100%; max-width: 170px; }
+
+.shelf-cell { position: relative; }
+/* La planche de bois sur laquelle le livre est posé */
+.shelf .book__meta { position: relative; margin-top: 0; padding-top: 1.15rem; }
+.shelf .book__meta::before {
+    content: ""; position: absolute; top: -3px; left: -1.1rem; right: -1.1rem; height: 12px;
+    background: linear-gradient(#5d432b, var(--noyer) 45%, #22170f);
+    box-shadow: 0 12px 16px -6px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.08) inset;
+    border-radius: 1px;
+}
+.catalogue--liste .shelf .book__meta::before { display: none; }
+.catalogue--liste .shelf .book__meta { padding-top: 0; }
+
+/* ==========================================================================
+   Intro : un livre se pose, s'ouvre, et la bibliothèque apparaît
+   ========================================================================== */
+.intro {
+    position: fixed; inset: 0; z-index: 1000;
+    display: grid; place-items: center;
+    background: radial-gradient(ellipse 60% 55% at 50% 42%, #1d3a30 0%, #0d1c17 60%, #08130f 100%);
+    overflow: hidden;
+}
+.no-js .intro { display: none; }
+.intro__livre { opacity: 0; }
+.intro__lampe {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 38% 46% at 50% 44%, rgba(255, 214, 140, .22), transparent 70%);
+    opacity: 0;
+}
+.intro__scene { position: relative; perspective: 2200px; }
+.intro__livre {
+    --iw: min(300px, 42vw);
+    position: relative;
+    width: var(--iw);
+    aspect-ratio: 2 / 3;
+    transform-style: preserve-3d;
+}
+/* Page de droite : le texte de bienvenue */
+.intro__page {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, #d9d0b8 0, #f1ead7 6%, #f4eedd 100%);
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 30px 60px rgba(0,0,0,.6), 4px 0 0 #ddd3bb, 7px 0 0 #cfc4a8;
+    display: grid; place-content: center; text-align: center;
+    padding: 12%;
+    color: #2b2620;
+}
+.intro__page h2 { font-size: calc(var(--iw) * .15); color: #23402f; }
+.intro__page p { font: italic 400 calc(var(--iw) * .05)/1.4 var(--f-texte); margin: .9rem 0 0; color: #5b5244; }
+.intro__page .ornement { width: 40%; margin: 1rem auto 0; height: 1px; background: #b08b3c; }
+.intro__ecrit { clip-path: inset(0 100% 0 0); }
+/* Feuillets qui défilent */
+.intro__feuillet {
+    position: absolute; inset: 1.5% 0 1.5% 0;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    background: #f1ead7;
+    border-radius: 0 3px 3px 0;
+    backface-visibility: visible;
+    box-shadow: inset 6px 0 12px rgba(0,0,0,.08);
+}
+.intro__feuillet:nth-child(odd) { background: #ede5d0; }
+.intro__verso {
+    position: absolute; inset: 0; transform: rotateY(180deg); backface-visibility: hidden;
+    background: linear-gradient(270deg, #d9d0b8 0, #f1ead7 6%, #f1ead7 100%);
+    border-radius: 3px 0 0 3px;
+    display: grid; place-content: center; padding: 14%;
+}
+/* La couverture : toile verte, titre doré */
+.intro__couverture {
+    position: absolute; inset: 0;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    z-index: 5;
+}
+.intro__face {
+    position: absolute; inset: 0; backface-visibility: hidden;
+    border-radius: 3px 6px 6px 3px;
+}
+.intro__face--avant {
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 3px),
+        linear-gradient(90deg, rgba(0,0,0,.4) 0, rgba(255,255,255,.12) 2.5%, transparent 7%),
+        #234b3e;
+    box-shadow: 0 40px 70px rgba(0,0,0,.65);
+    display: grid; place-content: center; text-align: center; gap: 1rem;
+    color: var(--dorure-vive);
+}
+.intro__face--avant::before {
+    content: ""; position: absolute; inset: 6% 6% 6% 10%;
+    border: 1px solid rgba(201, 163, 79, .7); outline: 1px solid rgba(201, 163, 79, .3); outline-offset: 4px;
+}
+.intro__titre {
+    font: 400 calc(var(--iw) * .17)/1 var(--f-titre);
+    background: linear-gradient(100deg, #b8913f 0%, #e6c97f 35%, #fff2c9 50%, #e6c97f 65%, #b8913f 100%);
+    background-size: 250% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.intro__sous-titre { font: 500 calc(var(--iw) * .042)/1.3 var(--f-texte); letter-spacing: .12em; color: rgba(230, 201, 127, .75); }
+.intro__face--avant svg { width: calc(var(--iw) * .16); margin: 0 auto; color: var(--dorure); }
+/* Verso de la couverture : papier marbré de garde */
+.intro__face--dos {
+    transform: rotateY(180deg);
+    background:
+        radial-gradient(circle at 20% 30%, #2c5747 0 8%, transparent 9%),
+        radial-gradient(circle at 70% 60%, #6c4f22 0 6%, transparent 7%),
+        radial-gradient(circle at 40% 80%, #1f3c33 0 10%, transparent 11%),
+        radial-gradient(circle at 85% 20%, #8a6a2c 0 5%, transparent 6%),
+        repeating-radial-gradient(circle at 50% 50%, #27463b 0 6px, #1d362d 6px 12px, #3b3020 12px 14px);
+    display: grid; place-content: center;
+}
+.intro__exlibris {
+    background: #f1ead7; color: #23402f; padding: 1.1rem 1.4rem; text-align: center;
+    border: 1px solid #b08b3c; outline: 3px double #b08b3c; outline-offset: 3px;
+    font: 400 calc(var(--iw) * .06)/1.25 var(--f-titre);
+}
+.intro__exlibris small { display: block; font: 500 calc(var(--iw) * .036)/1.4 var(--f-texte); color: #6b5f4a; margin-top: .3rem; }
+.intro__passer {
+    position: absolute; right: 1.5rem; bottom: 1.5rem;
+    background: transparent; border: 1px solid rgba(232,228,214,.25); color: var(--papier-doux);
+    padding: .55rem 1rem; border-radius: 999px; font: 500 .85rem var(--f-texte); cursor: pointer;
+}
+.intro__passer:hover { color: var(--papier); border-color: var(--dorure); }
+
+/* ==========================================================================
+   Accueil
+   ========================================================================== */
+.hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 3rem; align-items: center; padding: 5rem 0 4rem; min-height: min(78vh, 760px); }
+.hero h1 { max-width: 13ch; }
+.hero h1 .ligne { display: block; overflow: hidden; padding-bottom: .06em; }
+.hero h1 .ligne > span { display: inline-block; }
+.hero__texte { font-size: 1.15rem; color: var(--papier-doux); max-width: 46ch; margin: 1.6rem 0 2rem; }
+.hero__texte strong { color: var(--papier); font-weight: 600; }
+.hero__actions { display: flex; gap: .8rem; flex-wrap: wrap; }
+
+/* Pile de livres debout et penchés, à droite du titre */
+.pile { position: relative; height: 420px; display: flex; align-items: flex-end; justify-content: center; gap: 0; }
+.pile .book { --w: 150px; margin-left: -34px; transform-origin: bottom center; }
+.pile .book:first-child { margin-left: 0; }
+.pile .book:nth-child(1) { rotate: -5deg; }
+.pile .book:nth-child(2) { rotate: 2deg; translate: 0 -6px; --w: 165px; }
+.pile .book:nth-child(3) { rotate: -1deg; --w: 158px; }
+.pile .book:nth-child(4) { rotate: 6deg; translate: 6px 0; }
+.pile .book .book__3d { transform: rotateY(-32deg); }
+.pile .book:hover .book__3d { transform: rotateY(-10deg) translateY(-18px) translateZ(20px); }
+.pile .book__meta { display: none; }
+.pile__planche { position: absolute; left: -4%; right: -4%; bottom: -16px; height: 16px; background: linear-gradient(#5a4029, var(--noyer) 40%, #22170f); border-radius: 2px; box-shadow: 0 22px 30px rgba(0,0,0,.5); }
+
+.section { padding: 4.5rem 0 0; }
+.section__tete { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.section__tete p { color: var(--papier-doux); margin: .5rem 0 0; max-width: 52ch; }
+.lien-discret { color: var(--papier-doux); text-decoration: none; font-weight: 500; font-size: .95rem; border-bottom: 1px solid var(--filet-fort); padding-bottom: 2px; }
+.lien-discret:hover { color: var(--dorure-vive); border-color: var(--dorure); }
+
+/* Étagère qui défile à l'horizontale pendant le scroll */
+.rayonnage { position: relative; overflow: hidden; padding: 4.5rem 0 3rem; display: flex; flex-direction: column; justify-content: center; }
+/* Hauteur d'écran seulement quand l'étagère est épinglée (souris, animations actives) */
+html:not(.is-touch):not(.reduit) .rayonnage { min-height: 100vh; }
+.rayonnage__piste { display: flex; gap: 2.6rem; align-items: flex-start; padding: 2rem calc((100vw - min(1180px, 100vw - 2.5rem)) / 2) 0; width: max-content; will-change: transform; }
+.rayonnage .book { --w: 170px; flex: none; }
+.rayonnage .book__meta { position: relative; margin-top: 0; padding-top: 1.2rem; }
+.rayonnage .book__meta::before {
+    content: ""; position: absolute; top: -3px; left: -1.3rem; right: -1.3rem; height: 16px;
+    background: linear-gradient(#5d432b, var(--noyer) 45%, #1f150d);
+    box-shadow: 0 16px 20px -8px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.08) inset;
+}
+.rayonnage__entete { width: var(--page); margin: 0 auto 1rem; }
+.rayonnage__progres { width: var(--page); margin: 1.4rem auto 0; height: 2px; background: var(--filet); position: relative; }
+.rayonnage__progres span { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: var(--dorure); }
+.is-touch .rayonnage__piste { overflow-x: auto; width: auto; scroll-snap-type: x mandatory; }
+.is-touch .rayonnage__piste .book { scroll-snap-align: start; }
+
+/* Bandeau des emprunts en cours : fiches posées en éventail */
+.fiches-rang { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.4rem; }
+
+/* Rayons (genres) avec porte-étiquette en laiton */
+.rayons { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.2rem; }
+.rayon {
+    position: relative; display: flex; flex-direction: column; gap: 1rem;
+    padding: 1.2rem 1.2rem 0; text-decoration: none;
+    background: #0e1d18;
+    border: 7px solid var(--noyer); border-bottom: none;
+    border-radius: 2px 2px 0 0; overflow: hidden;
+    box-shadow: inset 0 22px 26px -14px rgba(0,0,0,.75), inset 14px 0 20px -14px rgba(0,0,0,.6), inset -14px 0 20px -14px rgba(0,0,0,.6);
+}
+.porte-etiquette {
+    align-self: flex-start;
+    display: inline-flex; align-items: baseline; gap: .6rem;
+    padding: .35rem .8rem; border-radius: 3px;
+    background: linear-gradient(180deg, #d8b866, #a8863a);
+    color: #2a2110; box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 2px 4px rgba(0,0,0,.4);
+}
+.porte-etiquette strong { font: 400 1.05rem/1.2 var(--f-titre); }
+.porte-etiquette small { font-size: .78rem; font-weight: 600; opacity: .8; }
+/* Dos de livres serrés dans le rayon */
+.dos-serres { display: flex; align-items: flex-end; gap: 3px; height: 92px; margin-bottom: -1rem; }
+.dos { width: 22px; border-radius: 2px 2px 0 0; background: var(--toile); position: relative; transition: transform .35s var(--ease-livre); box-shadow: inset -3px 0 0 rgba(0,0,0,.25), inset 2px 0 0 rgba(255,255,255,.08); }
+.dos::before, .dos::after { content: ""; position: absolute; left: 3px; right: 3px; height: 2px; background: rgba(230, 201, 127, .55); }
+.dos::before { top: 10px; } .dos::after { top: 15px; }
+.rayon:hover .dos { transform: translateY(-6px); }
+.rayon:hover .dos:nth-child(2) { transition-delay: .03s; } .rayon:hover .dos:nth-child(3) { transition-delay: .06s; } .rayon:hover .dos:nth-child(4) { transition-delay: .09s; } .rayon:hover .dos:nth-child(5) { transition-delay: .12s; }
+.dos-vide { font-size: .85rem; color: var(--papier-doux); padding-bottom: 1rem; align-self: center; }
+.rayon .ledge { height: 12px; margin: 0 -1.2rem; position: relative; background: linear-gradient(#5a4029, var(--noyer) 45%, #22170f); }
+
+/* ==========================================================================
+   Portraits d'auteurs
+   ========================================================================== */
+.portrait {
+    --taille: 96px;
+    position: relative; width: var(--taille); aspect-ratio: 4 / 5; flex: none;
+    border-radius: 3px; overflow: hidden;
+    background: var(--toile);
+    box-shadow: 0 0 0 1px rgba(201, 163, 79, .45), 0 0 0 5px var(--salle-2), 0 0 0 6px rgba(201, 163, 79, .25), 0 14px 24px rgba(0,0,0,.45);
+}
+.portrait__initiales { position: absolute; inset: 0; display: grid; place-items: center; font: 400 calc(var(--taille) * .38)/1 var(--f-titre); color: var(--dorure-vive); }
+.portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; opacity: 0; filter: sepia(.55) saturate(.7) contrast(1.05); transition: opacity .6s, filter .5s; }
+.portrait img.is-loaded { opacity: 1; }
+a:hover .portrait img, .portrait--vif img { filter: none; }
+
+.galerie { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2.2rem 1.6rem; }
+.carte-auteur { display: flex; gap: 1.1rem; align-items: center; text-decoration: none; padding: .6rem; border-radius: 6px; transition: background .25s; }
+.carte-auteur:hover { background: rgba(232, 228, 214, .04); }
+.carte-auteur .portrait { --taille: 78px; }
+.carte-auteur h3 { font-size: 1.2rem; }
+.carte-auteur p { margin: .2rem 0 0; color: var(--papier-doux); font-size: .88rem; }
+.galerie--grande { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+.galerie--grande .carte-auteur { flex-direction: column; align-items: flex-start; padding: 0 0 .8rem; }
+.galerie--grande .portrait { --taille: 100%; aspect-ratio: 4 / 5; }
+.galerie--grande .portrait__initiales { font-size: 5rem; }
+
+/* ==========================================================================
+   Fiche d'emprunt (carton ligné, tapé à la machine)
+   ========================================================================== */
+.fiche {
+    position: relative;
+    background:
+        linear-gradient(transparent 0 2.6rem, transparent 2.6rem),
+        repeating-linear-gradient(transparent 0 calc(1.9rem - 1px), rgba(108, 148, 186, .45) calc(1.9rem - 1px) 1.9rem),
+        var(--fiche);
+    background-position: 0 0, 0 3.3rem, 0 0;
+    color: var(--fiche-encre);
+    font-family: var(--f-machine);
+    padding: 1rem 1.3rem 1.6rem;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 18px 34px rgba(0,0,0,.45);
+    line-height: 1.9rem;
+    rotate: var(--penche, 0deg);
+}
+.fiche::before { content: ""; position: absolute; left: 0; right: 0; top: 3.3rem; height: 2px; background: rgba(196, 75, 75, .7); }
+/* Trou de classement en bas de fiche */
+.fiche::after { content: ""; position: absolute; left: 50%; bottom: .45rem; width: 14px; height: 14px; translate: -50% 0; border-radius: 50%; background: var(--salle); box-shadow: inset 0 2px 3px rgba(0,0,0,.5); }
+.fiche__tete { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; min-height: 2.3rem; }
+.fiche__tete strong { font-size: 1.05rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fiche__cote { font-size: .85rem; opacity: .75; white-space: nowrap; }
+.fiche__corps { padding-top: 1rem; }
+.fiche a { color: inherit; }
+.fiche .ligne-emprunt { display: grid; grid-template-columns: 1fr auto; gap: .2rem 1rem; align-items: center; }
+.fiche .ligne-emprunt + .ligne-emprunt { border-top: 1px dashed rgba(43, 42, 51, .2); }
+.fiche small { font-size: .82rem; opacity: .8; }
+.fiche .retard { color: #b0362a; font-weight: 700; }
+.fiche-mini { --penche: -1deg; }
+.fiches-rang .fiche:nth-child(3n+2) { --penche: .8deg; }
+.fiches-rang .fiche:nth-child(3n) { --penche: -.4deg; }
+.fiche .input, .fiche .select { background: rgba(255,255,255,.55); color: var(--fiche-encre); border-color: rgba(43,42,51,.25); font-family: var(--f-machine); }
+.fiche .input:focus { border-color: var(--encre-fiche); background: #fff; }
+.fiche .field label { color: var(--fiche-encre); font-family: var(--f-machine); font-weight: 700; }
+.fiche .error { color: #b0362a; font-family: var(--f-texte); }
+
+/* Tampon encreur */
+.tampon {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: .15rem .6rem; border: 2.5px solid currentColor; border-radius: 4px;
+    color: var(--encre-fiche); font: 700 .78rem/1.25 var(--f-machine); letter-spacing: .08em;
+    rotate: -7deg; opacity: .82; mix-blend-mode: multiply;
+    mask-image: radial-gradient(circle at 30% 40%, #000 60%, rgba(0,0,0,.75) 75%, #000 90%);
+}
+.tampon--retard { color: #b0362a; }
+.tampon--frappe { animation: frappe .55s cubic-bezier(.3, 1.6, .4, 1) both; }
+@keyframes frappe {
+    0% { transform: scale(2.4); opacity: 0; }
+    55% { transform: scale(.92); opacity: .95; }
+    75% { transform: scale(1.04); }
+    100% { transform: scale(1); opacity: .82; }
+}
+.fiche--secousse { animation: secousse .35s .28s both; }
+@keyframes secousse { 30% { translate: 0 2px; } 60% { translate: 0 -1px; } }
+
+/* ==========================================================================
+   Catalogue
+   ========================================================================== */
+.tete-page { padding: 3.5rem 0 2rem; display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; flex-wrap: wrap; }
+.tete-page p { color: var(--papier-doux); margin: .7rem 0 0; max-width: 56ch; }
+.catalogue { display: grid; grid-template-columns: 250px 1fr; gap: 3rem; align-items: start; }
+.filtres { position: sticky; top: 92px; display: grid; gap: 1.6rem; }
+.filtres h2 { font: 600 .85rem var(--f-texte); color: var(--papier-doux); margin-bottom: .7rem; }
+.filtres .chips { gap: .4rem; }
+.filtres .reset { font-size: .88rem; color: var(--papier-doux); }
+.barre-catalogue { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.4rem; flex-wrap: wrap; color: var(--papier-doux); font-size: .92rem; }
+.barre-catalogue form { display: flex; align-items: center; gap: .6rem; }
+.barre-catalogue .select { width: auto; padding-block: .45rem; }
+.vue-toggle { display: inline-flex; border: 1px solid var(--filet-fort); border-radius: 6px; overflow: hidden; }
+.vue-toggle button { background: transparent; border: 0; color: var(--papier-doux); padding: .45rem .7rem; cursor: pointer; display: grid; place-items: center; }
+.vue-toggle button[aria-pressed="true"] { background: rgba(232, 228, 214, .1); color: var(--papier); }
+.vue-toggle svg { width: 18px; height: 18px; }
+
+/* Vue liste */
+.catalogue--liste .shelf { grid-template-columns: 1fr; gap: 0; }
+.catalogue--liste .shelf-cell { display: grid; grid-template-columns: 64px 1fr; gap: 1.2rem; align-items: center; padding: .9rem 0; border-bottom: 1px solid var(--filet); }
+.catalogue--liste .book { --w: 64px; display: contents; }
+.catalogue--liste .book__3d { transform: none; width: 64px; }
+.catalogue--liste .book__back, .catalogue--liste .book__pages { display: none; }
+.catalogue--liste .book__meta { margin: 0; grid-template-columns: 1fr auto; column-gap: 1.5rem; }
+.catalogue--liste .book__meta .statut { grid-column: 2; grid-row: 1 / span 2; }
+
+.vide { border: 1px dashed var(--filet-fort); border-radius: 8px; padding: 3rem 2rem; text-align: center; color: var(--papier-doux); }
+.vide h3 { color: var(--papier); margin-bottom: .6rem; }
+.vide .btn { margin-top: 1rem; }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; gap: .35rem; margin-top: 3.5rem; flex-wrap: wrap; }
+.pagination a, .pagination span { min-width: 40px; height: 40px; display: grid; place-items: center; padding: 0 .7rem; border-radius: 6px; border: 1px solid var(--filet); text-decoration: none; color: var(--papier-doux); font-weight: 500; }
+.pagination a:hover { border-color: var(--dorure); color: var(--papier); }
+.pagination .is-current { background: var(--dorure); color: #1a1608; border-color: var(--dorure); }
+.pagination .is-disabled { opacity: .35; }
+
+/* ==========================================================================
+   Fiche d'un livre
+   ========================================================================== */
+.detail { display: grid; grid-template-columns: minmax(260px, 380px) 1fr; gap: 4.5rem; padding: 3.5rem 0 1rem; align-items: start; }
+.detail__couverture { position: sticky; top: 100px; }
+.detail__couverture .book { --w: 100%; --d: 26px; perspective: 1400px; }
+.detail__couverture .book__3d { transform: rotateY(-16deg) rotateX(3deg); transition: transform .2s ease-out; }
+.detail__couverture .book:hover .book__3d { transform: rotateY(-16deg) rotateX(3deg); }
+.fil { font-size: .9rem; color: var(--papier-doux); margin-bottom: 1.2rem; }
+.fil a { color: var(--papier-doux); }
+.detail h1 { font-size: clamp(2.2rem, 4.5vw, 3.6rem); text-wrap: balance; }
+.detail__auteur { display: flex; align-items: center; gap: .9rem; margin: 1.3rem 0 1.8rem; text-decoration: none; width: fit-content; }
+.detail__auteur .portrait { --taille: 48px; }
+.detail__auteur span { font-size: 1.05rem; }
+.detail__auteur small { display: block; color: var(--papier-doux); font-size: .85rem; }
+.caracteristiques { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); border-top: 1px solid var(--filet); border-bottom: 1px solid var(--filet); margin: 0 0 2rem; }
+.caracteristiques div { padding: 1rem 1rem 1rem 0; }
+.caracteristiques dt { font-size: .8rem; color: var(--papier-doux); }
+.caracteristiques dd { margin: .2rem 0 0; font: 400 1.25rem/1.2 var(--f-titre); }
+.resume { font-size: 1.08rem; line-height: 1.75; max-width: 64ch; color: #d9d6c8; }
+.resume::first-letter { font: 400 3.4em/.8 var(--f-titre); float: left; margin: .08em .1em 0 0; color: var(--dorure-vive); }
+.actions-livre { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 2rem; }
+.zone-emprunts { display: grid; grid-template-columns: 1.3fr 1fr; gap: 2rem; align-items: start; margin-top: 4rem; }
+.zone-emprunts h2 { margin-bottom: 1.2rem; }
+
+/* Barre de progression de lecture : un ruban de signet */
+.signet { position: fixed; top: calc(68px + var(--haut)); left: 0; right: 0; height: 3px; z-index: 49; pointer-events: none; }
+.signet span { display: block; height: 100%; background: var(--dorure); transform-origin: left; transform: scaleX(0); }
+
+/* ==========================================================================
+   Formulaires de saisie
+   ========================================================================== */
+.saisie { display: grid; grid-template-columns: 1fr 300px; gap: 4rem; align-items: start; padding-top: 1rem; }
+.saisie__form { display: grid; gap: 1.5rem; }
+.saisie__grille { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.3rem; align-items: start; }
+.col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; } .col-3 { grid-column: span 3; } .col-2 { grid-column: span 2; }
+.saisie__apercu { position: sticky; top: 100px; display: grid; gap: 2.2rem; justify-items: center; text-align: center; }
+.saisie__apercu .book { --w: 230px; }
+.saisie__apercu p { color: var(--papier-doux); font-size: .88rem; max-width: 30ch; }
+.etats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.etats label { position: relative; }
+.etats input { position: absolute; opacity: 0; }
+.etats span { display: block; text-align: center; padding: .65rem; border: 1px solid var(--filet-fort); border-radius: 6px; cursor: pointer; transition: all .2s; font-weight: 500; }
+.etats input:checked + span { border-color: var(--dorure); background: rgba(201, 163, 79, .12); color: var(--dorure-vive); }
+.etats input:focus-visible + span { outline: 2px solid var(--dorure-vive); outline-offset: 2px; }
+.form-actions { display: flex; gap: .8rem; align-items: center; padding-top: .5rem; border-top: 1px solid var(--filet); padding-top: 1.5rem; }
+.carte-form { max-width: 620px; }
+
+/* ==========================================================================
+   Recherche (tiroir du fichier)
+   ========================================================================== */
+.tiroir { position: fixed; inset: 0; z-index: 200; display: grid; align-items: start; justify-items: center; padding-top: 14vh; background: rgba(6, 12, 10, .72); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.tiroir.is-open { opacity: 1; pointer-events: auto; }
+.tiroir__boite { width: min(640px, 92vw); background: var(--fiche); color: var(--fiche-encre); border-radius: 4px; padding: 1.4rem 1.5rem 1.6rem; box-shadow: 0 40px 80px rgba(0,0,0,.6); transform: translateY(-30px) rotate(-1deg); transition: transform .45s var(--ease-livre); border-top: 6px solid #a8863a; }
+.tiroir.is-open .tiroir__boite { transform: none; }
+.tiroir__boite label { font: 700 .95rem var(--f-machine); display: block; margin-bottom: .6rem; }
+.tiroir__boite input { width: 100%; border: 0; border-bottom: 2px solid rgba(43,42,51,.35); background: transparent; font: 400 1.6rem/1.3 var(--f-titre); color: var(--fiche-encre); padding: .3rem 0; }
+.tiroir__boite input:focus { outline: none; border-color: var(--encre-fiche); }
+.tiroir__boite p { font: 400 .85rem var(--f-texte); color: #5f5a4e; margin: .9rem 0 0; }
+
+/* ==========================================================================
+   Message de confirmation : un bordereau tamponné
+   ========================================================================== */
+.bordereau {
+    position: fixed; right: calc(1rem + env(safe-area-inset-right, 0px)); bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 300;
+    width: min(380px, calc(100vw - 2rem));
+    display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center;
+    background: var(--fiche); color: var(--fiche-encre);
+    padding: 1rem 2.2rem 1rem 1.2rem; border-radius: 3px;
+    font: 400 .95rem/1.45 var(--f-texte);
+    box-shadow: 0 24px 50px rgba(0,0,0,.55);
+    border-left: 4px solid #a8863a;
+    animation: glisse .6s var(--ease-livre) both;
+}
+.bordereau.is-out { animation: sort .4s ease-in both; }
+@keyframes glisse { from { transform: translateY(40px) rotate(3deg); opacity: 0; } }
+@keyframes sort { to { transform: translateY(30px); opacity: 0; } }
+.bordereau .tampon { animation: frappe .55s .35s cubic-bezier(.3, 1.6, .4, 1) both; }
+.bordereau button { position: absolute; top: .3rem; right: .45rem; background: none; border: 0; color: #6b6556; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: .2rem; }
+
+.alerte { border: 1px solid color-mix(in srgb, var(--retard) 40%, transparent); background: color-mix(in srgb, var(--retard) 8%, transparent); padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.5rem; }
+
+/* Dialogue de confirmation de suppression */
+dialog.confirmer { border: 0; padding: 0; background: transparent; color: inherit; }
+dialog.confirmer::backdrop { background: rgba(6, 12, 10, .75); backdrop-filter: blur(3px); }
+dialog.confirmer .fiche { width: min(440px, 90vw); padding: 1.2rem 1.5rem 2rem; }
+dialog.confirmer[open] .fiche { animation: glisse .45s var(--ease-livre) both; }
+dialog.confirmer h2 { font: 700 1.1rem/1.4 var(--f-machine); }
+dialog.confirmer .boutons { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1rem; }
+dialog.confirmer .btn--ghost { --fg: var(--fiche-encre); border-color: rgba(43,42,51,.3); }
+dialog.confirmer .btn--rouge { --bg: #a93226; --fg: #fff; }
+
+/* Onglets du registre */
+.onglets { display: flex; gap: .4rem; border-bottom: 1px solid var(--filet); margin-bottom: 2.2rem; flex-wrap: wrap; }
+.onglets a { padding: .8rem 1.1rem; text-decoration: none; color: var(--papier-doux); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.onglets a[aria-current="page"] { color: var(--papier); border-color: var(--dorure); }
+.onglets a .compte { display: inline-grid; place-items: center; min-width: 22px; height: 22px; margin-left: .45rem; border-radius: 999px; background: rgba(232,228,214,.1); font-size: .78rem; }
+.onglets a.onglet-retard .compte { background: color-mix(in srgb, var(--retard) 30%, transparent); color: #ffd1c6; }
+.registre { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.6rem; }
+.registre .fiche__livre { display: grid; grid-template-columns: 54px 1fr; gap: 1rem; align-items: start; padding-top: 1rem; }
+.registre .book { --w: 54px; --d: 6px; }
+.registre .book__3d { transform: none; }
+.registre form { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.registre form .input { width: auto; padding: .25rem .5rem; }
+.registre form .btn { padding: .4rem .7rem; font-size: .8rem; }
+
+/* Auteur */
+.auteur-tete { display: grid; grid-template-columns: 260px 1fr; gap: 3.5rem; padding: 3.5rem 0 2rem; align-items: start; }
+.auteur-tete .portrait { --taille: 100%; }
+.auteur-tete .portrait__initiales { font-size: 6rem; }
+.bio { font-size: 1.05rem; line-height: 1.75; max-width: 62ch; color: #d9d6c8; min-height: 3em; }
+.bio cite { display: block; margin-top: .6rem; font-size: .82rem; font-style: normal; color: var(--papier-doux); }
+.bio.is-loading { color: var(--papier-doux); }
+.chiffres { display: flex; gap: 2.5rem; flex-wrap: wrap; margin: 1.5rem 0; }
+.chiffres div { display: grid; }
+.chiffres strong { font: 400 2rem/1 var(--f-titre); color: var(--dorure-vive); }
+.chiffres span { color: var(--papier-doux); font-size: .88rem; margin-top: .35rem; }
+
+/* Pied de page */
+.pied { border-top: 1px solid var(--filet); padding: 2.5rem 0; color: var(--papier-doux); font-size: .88rem; position: relative; z-index: 1; }
+.pied .page { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+/* Révélation au scroll (utilisée avec parcimonie) */
+.reveal { opacity: 0; transform: translateY(24px); }
+.no-js .reveal, .reduit .reveal { opacity: 1; transform: none; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 960px) {
+    .hero { grid-template-columns: minmax(0, 1fr); padding-top: 3rem; min-height: 0; }
+    .pile { height: 340px; }
+    .pile .book { --w: 120px; }
+    .pile .book:nth-child(2) { --w: 132px; } .pile .book:nth-child(3) { --w: 126px; }
+    .catalogue { grid-template-columns: 1fr; }
+    .filtres { position: static; }
+    .detail, .zone-emprunts, .saisie, .auteur-tete { grid-template-columns: 1fr; gap: 2.5rem; }
+    .detail__couverture, .saisie__apercu { position: static; }
+    .detail__couverture .book { max-width: 280px; margin: 0 auto; }
+    .auteur-tete .portrait { max-width: 220px; }
+}
+@media (max-width: 760px) {
+    .nav { position: fixed; inset: calc(68px + var(--haut)) 0 auto; flex-direction: column; gap: 0; background: var(--salle-2); border-bottom: 1px solid var(--filet); padding: .5rem 1.25rem 1rem; transform: translateY(-120%); transition: transform .35s var(--ease-livre); z-index: -1; }
+    .nav.is-open { transform: none; }
+    .nav a { padding: .8rem 0; font-size: 1.05rem; border-bottom: 1px solid var(--filet); }
+    .nav a[aria-current="page"]::after { display: none; }
+    .nav a[aria-current="page"] { color: var(--dorure-vive); }
+    .topbar__inner { gap: 1rem; justify-content: space-between; }
+    .menu-toggle { display: grid; place-items: center; width: 40px; height: 40px; background: none; border: 1px solid var(--filet-fort); border-radius: 6px; color: var(--papier); cursor: pointer; }
+    .search-trigger span, .search-trigger kbd, .topbar__actions .btn span { display: none; }
+    .shelf { grid-template-columns: repeat(2, 1fr); gap: 2.5rem 1.6rem; }
+    .saisie__grille { grid-template-columns: 1fr; }
+    .saisie__grille > * { grid-column: auto; }
+    .rayonnage .book { --w: 130px; }
+    .pile { height: 280px; }
+    .pile .book { --w: 92px; margin-left: -22px; }
+    .pile .book:nth-child(2) { --w: 100px; } .pile .book:nth-child(3) { --w: 96px; }
+    .hero__actions .btn { flex: 1 1 auto; }
+}
+
+/* Mouvement réduit : tout reste lisible, rien ne bouge */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    @view-transition { navigation: none; }
+}
+
+
+/* ---------- Démo téléphone ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--salle); }
+button.chip { font: inherit; background: transparent; cursor: pointer; display: inline-flex; align-items: center; border: 1px solid var(--filet-fort); border-radius: 999px; padding: .38rem .8rem; font-size: .88rem; color: var(--papier-doux); transition: all .18s; }
+button.chip:hover { border-color: var(--dorure); color: var(--papier); }
+button.chip.is-on { background: var(--dorure); border-color: var(--dorure); color: #1a1608; }
+.pagination button { min-width: 40px; height: 40px; padding: 0 .7rem; border-radius: 6px; border: 1px solid var(--filet); background: transparent; color: var(--papier-doux); font: 500 1rem var(--f-texte); cursor: pointer; }
+.pagination button:hover { border-color: var(--dorure); color: var(--papier); }
+.reset { background: none; border: 0; padding: 0; color: var(--papier-doux); text-decoration: underline; text-underline-offset: 3px; font: inherit; font-size: .88rem; cursor: pointer; justify-self: start; }
+.btn--encre { --bg: var(--encre-fiche); --fg: #fff; }
+.btn--encre:hover { background: #6f52bd; }
+.retour { display: grid; gap: .35rem; justify-items: end; }
+.retour .input { width: auto; padding: .15rem .4rem; line-height: 1.4; }
+.filtres__plus summary { list-style: none; cursor: pointer; display: none; }
+.filtres__plus summary::-webkit-details-marker { display: none; }
+.filtres__corps { display: grid; gap: 1.6rem; }
+.tri { display: flex; align-items: center; gap: .6rem; }
+fieldset.field { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.field legend { margin-bottom: .5rem; padding: 0; }
+.saisie__form > *, .saisie__grille > * { min-width: 0; }
+.demo-note { display: flex; gap: .4rem 1rem; flex-wrap: wrap; align-items: baseline; }
+.demo-note button { background: none; border: 0; padding: 0; font: inherit; color: var(--dorure-vive); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.portrait { max-width: 100%; }
+.fiche .tampon { justify-self: start; width: max-content; }
+@media (max-width: 960px) {
+    .filtres__plus summary { display: flex; justify-content: space-between; align-items: center; padding: .7rem .9rem; border: 1px solid var(--filet-fort); border-radius: 6px; font-weight: 500; }
+    .filtres__plus summary::after { content: "+"; font-size: 1.2rem; color: var(--dorure); }
+    .filtres__plus[open] summary::after { content: "−"; }
+    .filtres__plus[open] .filtres__corps { margin-top: 1.2rem; }
+}
+@media (max-width: 760px) {
+    .tete-page { padding: 2rem 0 1.4rem; }
+    .hero { gap: 1.5rem; padding-bottom: 2.5rem; }
+    .pile { height: 230px; }
+    .tete-page .btn { width: 100%; }
+    .detail { padding-top: 1.5rem; }
+    .caracteristiques { grid-template-columns: repeat(2, 1fr); }
+    .fiche .ligne-emprunt { grid-template-columns: 1fr; }
+    .retour { justify-items: start; margin-bottom: .6rem; }
+    .registre { grid-template-columns: 1fr; }
+    .galerie--grande { grid-template-columns: repeat(2, 1fr); gap: 1.6rem 1rem; }
+    .galerie--grande .portrait__initiales { font-size: 3rem; }
+    .auteur-tete .portrait { max-width: 160px; }
+    .chiffres { gap: 1.5rem; }
+    .section { padding-top: 3.5rem; }
+    .intro__passer { right: calc(1rem + env(safe-area-inset-right, 0px)); bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="intro" id="intro" role="presentation">
+    <div class="intro__lampe"></div>
+    <div class="intro__scene"><div class="intro__livre">
+        <div class="intro__page">
+            <div class="intro__ecrit"><h2>Bienvenue</h2></div>
+            <div class="intro__ecrit"><p>dans la bibliothèque du département IRT</p></div>
+            <div class="intro__ecrit"><div class="ornement"></div></div>
+        </div>
+        <div class="intro__feuillet"><div class="intro__verso"><div class="intro__exlibris">Ex-libris<small>Bibliothèque du département IRT</small></div></div></div>
+        <div class="intro__feuillet"></div><div class="intro__feuillet"></div><div class="intro__feuillet"></div><div class="intro__feuillet"></div>
+        <div class="intro__couverture">
+            <div class="intro__face intro__face--avant">
+                <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8.5c4.2-1.6 7.6-1.1 11 1.4 3.4-2.5 6.8-3 11-1.4v15c-4.2-1.6-7.6-1.1-11 1.4-3.4-2.5-6.8-3-11-1.4z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M16 9.9v15" stroke="currentColor" stroke-width="1.2"/></svg>
+                <div class="intro__titre">BookLore</div>
+                <div class="intro__sous-titre">Département IRT</div>
+            </div>
+            <div class="intro__face intro__face--dos"></div>
+        </div>
+    </div></div>
+    <button type="button" class="intro__passer">Passer l'introduction</button>
+</div>
+
+<header class="topbar"><div class="topbar__inner">
+    <a href="#accueil" class="logo" aria-label="BookLore, accueil"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8.5c4.2-1.6 7.6-1.1 11 1.4 3.4-2.5 6.8-3 11-1.4v15c-4.2-1.6-7.6-1.1-11 1.4-3.4-2.5-6.8-3-11-1.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M16 9.9v15" stroke="currentColor" stroke-width="1.6"/><path d="M20 8.6v7.4l1.6-1.3 1.6 1.3V7.9" fill="currentColor"/></svg><span>BookLore</span></a>
+    <nav class="nav" id="nav" aria-label="Navigation principale">
+        <a href="#accueil" data-nav="accueil">Accueil</a><a href="#catalogue" data-nav="catalogue">Catalogue</a><a href="#auteurs" data-nav="auteurs">Auteurs</a><a href="#rayons" data-nav="rayons">Rayons</a><a href="#emprunts" data-nav="emprunts">Emprunts</a>
+    </nav>
+    <div class="topbar__actions">
+        <button type="button" class="search-trigger" data-ouvrir-recherche aria-label="Rechercher un livre"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Rechercher</span><kbd>/</kbd></button>
+        <a href="#ajouter" class="btn btn--small" aria-label="Ajouter un livre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Ajouter un livre</span></a>
+        <button type="button" class="menu-toggle" aria-controls="nav" aria-expanded="false" aria-label="Ouvrir le menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+</div></header>
+
+<main id="app"></main>
+
+<footer class="pied"><div class="page">
+    <span class="demo-note">Démo de BookLore : les livres et les prêts sont des exemples, vos ajouts restent sur cet appareil. <button type="button" data-reinit>Revenir aux données de départ</button></span>
+    <span>Photos de couvertures : Open Library.</span>
+</div></footer>
+
+<div class="tiroir" id="tiroir" aria-hidden="true">
+    <form class="tiroir__boite" data-form="recherche" role="search">
+        <label for="recherche-globale">Chercher dans le fichier</label>
+        <input id="recherche-globale" type="search" placeholder="Un titre ou un auteur" autocomplete="off">
+        <p>Entrée pour lancer la recherche, Échap ou un appui à côté pour refermer le tiroir.</p>
+    </form>
+</div>
+
+<dialog class="confirmer" id="confirmer" aria-labelledby="confirmer-titre">
+    <div class="fiche">
+        <div class="fiche__tete"><strong id="confirmer-titre">Retirer ce livre ?</strong></div>
+        <div class="fiche__corps">
+            <p>« <span data-titre></span> » sera retiré du catalogue, avec tout son historique d'emprunts. Cette action est définitive.</p>
+            <div class="boutons"><button type="button" class="btn btn--ghost" data-annuler>Garder le livre</button><button type="button" class="btn btn--rouge" data-confirmer-suppression>Retirer du catalogue</button></div>
+        </div>
+    </div>
+</dialog>
+
+<script>window.BOOKLORE_COUVERTURES = true;</script>
+<script type="application/json" id="donnees">{"genres": [{"id": 1, "nom": "Littérature africaine"}, {"id": 2, "nom": "Classique"}, {"id": 3, "nom": "Science-fiction"}, {"id": 4, "nom": "Dystopie"}, {"id": 5, "nom": "Informatique"}, {"id": 6, "nom": "Réseaux et systèmes"}, {"id": 7, "nom": "Philosophie"}, {"id": 8, "nom": "Essai"}, {"id": 9, "nom": "Jeunesse"}], "auteurs": [{"id": 1, "nom": "Chinua Achebe", "nat": "Nigériane", "an": 1930}, {"id": 2, "nom": "Mariama Bâ", "nat": "Sénégalaise", "an": 1929}, {"id": 3, "nom": "Ahmadou Kourouma", "nat": "Ivoirienne", "an": 1927}, {"id": 4, "nom": "Camara Laye", "nat": "Guinéenne", "an": 1928}, {"id": 5, "nom": "Cheikh Hamidou Kane", "nat": "Sénégalaise", "an": 1928}, {"id": 6, "nom": "Olympe Bhêly-Quenum", "nat": "Béninoise", "an": 1928}, {"id": 7, "nom": "Chimamanda Ngozi Adichie", "nat": "Nigériane", "an": 1977}, {"id": 8, "nom": "Albert Camus", "nat": "Française", "an": 1913}, {"id": 9, "nom": "Victor Hugo", "nat": "Française", "an": 1802}, {"id": 10, "nom": "Antoine de Saint-Exupéry", "nat": "Française", "an": 1900}, {"id": 11, "nom": "Gabriel García Márquez", "nat": "Colombienne", "an": 1927}, {"id": 12, "nom": "George Orwell", "nat": "Britannique", "an": 1903}, {"id": 13, "nom": "Aldous Huxley", "nat": "Britannique", "an": 1894}, {"id": 14, "nom": "Isaac Asimov", "nat": "Américaine", "an": 1920}, {"id": 15, "nom": "Frank Herbert", "nat": "Américaine", "an": 1920}, {"id": 16, "nom": "Robert C. Martin", "nat": "Américaine", "an": 1952}, {"id": 17, "nom": "Steve McConnell", "nat": "Américaine", "an": 1962}, {"id": 18, "nom": "Andrew S. Tanenbaum", "nat": "Américaine", "an": 1944}, {"id": 19, "nom": "Thomas H. Cormen", "nat": "Américaine", "an": 1956}, {"id": 20, "nom": "Erich Gamma", "nat": "Suisse", "an": 1961}, {"id": 21, "nom": "Yuval Noah Harari", "nat": "Israélienne", "an": 1976}], "livres": [{"id": 1, "titre": "Things Fall Apart", "isbn": "9780385474542", "annee": 1958, "pages": 209, "etat": "bon", "auteur": 1, "genres": [1, 2], "resume": "Okonkwo, lutteur respecté d'un village igbo, voit son monde se fissurer à l'arrivée des missionnaires et de l'administration coloniale.", "cree": 1}, {"id": 2, "titre": "Une si longue lettre", "isbn": "9782842612894", "annee": 1979, "pages": 165, "etat": "bon", "auteur": 2, "genres": [1, 2], "resume": "Ramatoulaye, veuve depuis peu, écrit à son amie Aïssatou et revient sur son mariage, la polygamie et la place des femmes au Sénégal.", "cree": 2}, {"id": 3, "titre": "Les Soleils des indépendances", "isbn": "9782020259217", "annee": 1968, "pages": 196, "etat": "abime", "auteur": 3, "genres": [1, 2], "resume": "Fama, dernier prince malinké, se retrouve sans rôle ni ressources dans une Afrique qui vient d'obtenir son indépendance.", "cree": 3}, {"id": 4, "titre": "Allah n'est pas obligé", "isbn": "9782020525718", "annee": 2000, "pages": 233, "etat": "bon", "auteur": 3, "genres": [1], "resume": "Birahima, enfant soldat d'une dizaine d'années, raconte avec un humour féroce sa traversée des guerres du Liberia et de la Sierra Leone.", "cree": 4}, {"id": 5, "titre": "L'Enfant noir", "isbn": "9782266108157", "annee": 1953, "pages": 221, "etat": "neuf", "auteur": 4, "genres": [1, 9], "resume": "Souvenirs d'une enfance à Kouroussa, entre la forge du père, les rites d'initiation et le départ pour Conakry puis Paris.", "cree": 5}, {"id": 6, "titre": "L'Aventure ambiguë", "isbn": "9782264036933", "annee": 1961, "pages": 191, "etat": "bon", "auteur": 5, "genres": [1, 7], "resume": "Samba Diallo, élève de l'école coranique devenu étudiant à Paris, se perd entre deux façons de voir le monde.", "cree": 6}, {"id": 7, "titre": "Un piège sans fin", "isbn": "9782708704558", "annee": 1960, "pages": 284, "etat": "abime", "auteur": 6, "genres": [1, 2], "resume": "Le destin d'Ahouna, paysan du Dahomey, qui bascule après un geste de colère et l'entraîne dans une spirale tragique.", "cree": 7}, {"id": 8, "titre": "Americanah", "isbn": "9780307455925", "annee": 2013, "pages": 588, "etat": "neuf", "auteur": 7, "genres": [1], "resume": "Ifemelu quitte Lagos pour les États-Unis, découvre ce que signifie être noire en Amérique, puis envisage le retour.", "cree": 8}, {"id": 9, "titre": "Half of a Yellow Sun", "isbn": "9781400095209", "annee": 2006, "pages": 543, "etat": "bon", "auteur": 7, "genres": [1], "resume": "La guerre du Biafra vue par une jeune femme, son amant universitaire et leur domestique Ugwu.", "cree": 9}, {"id": 10, "titre": "L'Étranger", "isbn": "9782070360024", "annee": 1942, "pages": 186, "etat": "bon", "auteur": 8, "genres": [2, 7], "resume": "Meursault, employé de bureau à Alger, tue un homme sur une plage et assiste à son propre procès comme un étranger.", "cree": 10}, {"id": 11, "titre": "La Peste", "isbn": "9782070360420", "annee": 1947, "pages": 279, "etat": "bon", "auteur": 8, "genres": [2, 7], "resume": "Une épidémie isole la ville d'Oran ; le docteur Rieux et quelques volontaires organisent la résistance au fléau.", "cree": 11}, {"id": 12, "titre": "Le Mythe de Sisyphe", "isbn": "9782070322886", "annee": 1942, "pages": 187, "etat": "neuf", "auteur": 8, "genres": [7, 8], "resume": "Essai sur l'absurde : comment vivre dans un monde sans réponse, en prenant Sisyphe et son rocher pour figure.", "cree": 12}, {"id": 13, "titre": "Les Misérables, tome 1", "isbn": "9782253096344", "annee": 1862, "pages": 960, "etat": "abime", "auteur": 9, "genres": [2], "resume": "Jean Valjean sort du bagne, rencontre l'évêque Myriel et tente de devenir un autre homme, poursuivi par Javert.", "cree": 13}, {"id": 14, "titre": "Le Petit Prince", "isbn": "9782070408504", "annee": 1943, "pages": 96, "etat": "bon", "auteur": 10, "genres": [2, 9, 7], "resume": "Un aviateur en panne dans le Sahara rencontre un enfant venu d'un astéroïde, qui lui parle de sa rose et des grandes personnes.", "cree": 14}, {"id": 15, "titre": "One Hundred Years of Solitude", "isbn": "9780060883287", "annee": 1967, "pages": 417, "etat": "bon", "auteur": 11, "genres": [2], "resume": "Sept générations de la famille Buendía dans le village imaginaire de Macondo, où le merveilleux fait partie du quotidien.", "cree": 15}, {"id": 16, "titre": "1984", "isbn": "9782070368228", "annee": 1949, "pages": 438, "etat": "bon", "auteur": 12, "genres": [4, 2], "resume": "Winston Smith réécrit l'histoire au ministère de la Vérité, sous l'œil permanent de Big Brother, jusqu'au jour où il désobéit.", "cree": 16}, {"id": 17, "titre": "Animal Farm", "isbn": "9780451526342", "annee": 1945, "pages": 140, "etat": "neuf", "auteur": 12, "genres": [4, 2], "resume": "Les animaux chassent le fermier et prennent le pouvoir, avant que les cochons ne deviennent plus égaux que les autres.", "cree": 17}, {"id": 18, "titre": "Brave New World", "isbn": "9780060850524", "annee": 1932, "pages": 268, "etat": "bon", "auteur": 13, "genres": [4, 3], "resume": "Une société où le bonheur est fabriqué en laboratoire et entretenu par une drogue, vue à travers les yeux d'un sauvage.", "cree": 18}, {"id": 19, "titre": "Foundation", "isbn": "9780553293357", "annee": 1951, "pages": 244, "etat": "bon", "auteur": 14, "genres": [3], "resume": "Hari Seldon prédit la chute de l'Empire galactique et fonde une communauté chargée d'abréger l'âge sombre qui suivra.", "cree": 19}, {"id": 20, "titre": "I, Robot", "isbn": "9780553382563", "annee": 1950, "pages": 224, "etat": "abime", "auteur": 14, "genres": [3], "resume": "Neuf nouvelles autour des trois lois de la robotique, et des façons inattendues dont des machines peuvent les respecter.", "cree": 20}, {"id": 21, "titre": "Dune", "isbn": "9780441172719", "annee": 1965, "pages": 896, "etat": "bon", "auteur": 15, "genres": [3], "resume": "Sur Arrakis, planète désertique et seule source de l'épice, le jeune Paul Atréides devient l'enjeu d'une lutte entre grandes maisons.", "cree": 21}, {"id": 22, "titre": "Clean Code", "isbn": "9780132350884", "annee": 2008, "pages": 464, "etat": "neuf", "auteur": 16, "genres": [5], "resume": "Des règles concrètes pour écrire un code lisible : nommage, fonctions courtes, gestion des erreurs, tests et remaniement.", "cree": 22}, {"id": 23, "titre": "The Clean Coder", "isbn": "9780137081073", "annee": 2011, "pages": 256, "etat": "bon", "auteur": 16, "genres": [5], "resume": "Le comportement professionnel d'un développeur : estimer, dire non, gérer la pression et travailler en équipe.", "cree": 23}, {"id": 24, "titre": "Code Complete", "isbn": "9780735619678", "annee": 2004, "pages": 960, "etat": "bon", "auteur": 17, "genres": [5], "resume": "Un guide de construction logicielle, de la conception d'une routine au débogage, appuyé sur des études de terrain.", "cree": 24}, {"id": 25, "titre": "Computer Networks", "isbn": "9780132126953", "annee": 2010, "pages": 960, "etat": "abime", "auteur": 18, "genres": [6, 5], "resume": "Les réseaux couche par couche, du support physique aux applications, avec Ethernet, IP, TCP et la sécurité.", "cree": 25}, {"id": 26, "titre": "Modern Operating Systems", "isbn": "9780133591620", "annee": 2014, "pages": 1136, "etat": "bon", "auteur": 18, "genres": [6, 5], "resume": "Processus, mémoire, systèmes de fichiers et entrées-sorties, illustrés par Linux, Windows et Android.", "cree": 26}, {"id": 27, "titre": "Introduction to Algorithms", "isbn": "9780262033848", "annee": 2009, "pages": 1312, "etat": "bon", "auteur": 19, "genres": [5], "resume": "La référence des algorithmes : tri, structures de données, graphes, programmation dynamique et complexité.", "cree": 27}, {"id": 28, "titre": "Design Patterns", "isbn": "9780201633610", "annee": 1994, "pages": 395, "etat": "bon", "auteur": 20, "genres": [5], "resume": "Vingt-trois patrons de conception orientée objet, du singleton à l'observateur, avec leurs cas d'usage.", "cree": 28}, {"id": 29, "titre": "Sapiens", "isbn": "9780062316097", "annee": 2011, "pages": 464, "etat": "neuf", "auteur": 21, "genres": [8], "resume": "Une brève histoire de l'humanité, de la révolution cognitive à la révolution scientifique.", "cree": 29}], "prets": [{"id": 1, "livre": 22, "nom": "Kossi Agbodjan", "sortie": -20, "retour": null}, {"id": 2, "livre": 2, "nom": "Aïcha Dossou", "sortie": -5, "retour": null}, {"id": 3, "livre": 10, "nom": "Mawuli Tossou", "sortie": -30, "retour": -20}, {"id": 4, "livre": 25, "nom": "Fifamè Akplogan", "sortie": -3, "retour": null}, {"id": 5, "livre": 16, "nom": "Rodrigue Houngbo", "sortie": -40, "retour": -28}, {"id": 6, "livre": 21, "nom": "Sènan Adjovi", "sortie": -16, "retour": null}, {"id": 7, "livre": 1, "nom": "Mawuli Tossou", "sortie": -60, "retour": -50}, {"id": 8, "livre": 4, "nom": "Kossi Agbodjan", "sortie": -12, "retour": null}, {"id": 9, "livre": 14, "nom": "Aïcha Dossou", "sortie": -25, "retour": -22}, {"id": 10, "livre": 10, "nom": "Fifamè Akplogan", "sortie": -18, "retour": -9}]}</script>
+<script src="js/vendor/gsap.min.js"></script>
+<script src="js/vendor/ScrollTrigger.min.js"></script>
+<script src="js/vendor/lenis.min.js"></script>
+<script>
+(() => {
+'use strict';
+const html = document.documentElement;
+const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tactile = matchMedia('(pointer: coarse)').matches;
+if (reduit) html.classList.add('reduit');
+if (tactile) html.classList.add('is-touch');
+const gsap = window.gsap;
+const ST = window.ScrollTrigger;
+if (gsap && ST) gsap.registerPlugin(ST);
+const anime = Boolean(gsap) && !reduit;
+const $ = (s, c = document) => c.querySelector(s);
+const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
+/* ---------------- Données ---------------- */
+const INITIAL = JSON.parse(document.getElementById('donnees').textContent);
+const JOUR = 864e5;
+const auj = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const iso = (d) => { const z = new Date(d); return `${z.getFullYear()}-${String(z.getMonth() + 1).padStart(2, '0')}-${String(z.getDate()).padStart(2, '0')}`; };
+const parse = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const fr = (s) => { const d = typeof s === 'string' ? parse(s) : s; return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; };
+const DUREE = 14;
+
+function fraiches() {
+    const d = JSON.parse(JSON.stringify(INITIAL));
+    d.prets = d.prets.map((p) => ({ ...p, sortie: iso(auj().getTime() + p.sortie * JOUR), retour: p.retour === null ? null : iso(auj().getTime() + p.retour * JOUR) }));
+    return d;
+}
+let D;
+try { D = JSON.parse(localStorage.getItem('booklore:demo') || 'null'); } catch (e) { D = null; }
+if (!D || !D.livres) D = fraiches();
+const sauver = () => { try { localStorage.setItem('booklore:demo', JSON.stringify(D)); } catch (e) { /* stockage indisponible */ } };
+const nid = (liste) => Math.max(0, ...liste.map((x) => x.id)) + 1;
+
+const ETATS = { neuf: 'Neuf', bon: 'Bon état', abime: 'Abîmé' };
+const auteur = (id) => D.auteurs.find((a) => a.id === id);
+const livre = (id) => D.livres.find((l) => l.id === id);
+const genre = (id) => D.genres.find((g) => g.id === id);
+const pretsDe = (id) => D.prets.filter((p) => p.livre === id).sort((a, b) => b.sortie.localeCompare(a.sortie));
+const enCours = (id) => D.prets.find((p) => p.livre === id && !p.retour);
+const limite = (p) => new Date(parse(p.sortie).getTime() + DUREE * JOUR);
+const enRetard = (p) => !p.retour && limite(p) < auj();
+const joursRetard = (p) => Math.round((auj() - limite(p)) / JOUR);
+const duree = (p) => Math.round(((p.retour ? parse(p.retour) : auj()) - parse(p.sortie)) / JOUR);
+const livresAuteur = (id) => D.livres.filter((l) => l.auteur === id);
+const livresGenre = (id) => D.livres.filter((l) => l.genres.includes(id));
+const initiales = (nom) => { const m = nom.trim().split(/\s+/); return (m[0][0] + (m.length > 1 ? m[m.length - 1][0] : '')).toUpperCase(); };
+
+/* Couleur de toile : même calcul que crc32() en PHP */
+const TOILES = ['#7A2E2E', '#24456B', '#2F5D4A', '#8A6A1F', '#4B3A6B', '#5C3B28', '#1F5A5E', '#6B2B4A'];
+const crcT = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+const crc32 = (s) => { let c = 0xffffffff; for (const b of new TextEncoder().encode(s)) c = crcT[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+const toile = (t) => TOILES[crc32(t) % 8];
+const lecture = (p) => { if (!p) return null; const h = Math.round(p * 1.5 / 60); return h < 1 ? "moins d'une heure" : `${h} h environ`; };
+
+/* ---------------- Composants ---------------- */
+function bookHTML(b, o = {}) {
+    const a = auteur(b.auteur);
+    const tag = o.lien === false ? 'div' : 'a';
+    const href = o.lien === false ? '' : ` href="#livre-${b.id}" data-livre="${b.id}"`;
+    let meta = '';
+    if (o.meta !== false) {
+        const sorti = enCours(b.id);
+        meta = `<div class="book__meta"><span class="book__titre">${esc(b.titre)}</span><span class="book__auteur">${esc(a.nom)}</span>
+            <span class="statut ${sorti ? (enRetard(sorti) ? 'statut--retard' : 'statut--sorti') : ''}">${sorti ? (enRetard(sorti) ? 'En retard' : 'Emprunté') : 'En rayon'}</span></div>`;
+    }
+    return `<${tag} class="book"${href} style="--toile:${toile(b.titre)}"><div class="book__3d"${o.vt ? ` style="view-transition-name:livre-${b.id}"` : ''}><div class="book__back"></div><div class="book__pages"></div>
+        <div class="book__cover"><div class="cover-fallback" aria-hidden="true"><span class="cover-fallback__titre">${esc(b.titre)}</span><span class="cover-fallback__orn"></span><span class="cover-fallback__auteur">${esc(a.nom)}</span></div>${couverture(b)}</div></div>${meta}</${tag}>`;
+}
+/* Photo de couverture d'après l'ISBN (Open Library). Si elle n'existe pas, la couverture en toile reste visible. */
+const COUVERTURES = window.BOOKLORE_COUVERTURES === true;
+const couverture = (b) => (COUVERTURES && b.isbn ? `<img src="https://covers.openlibrary.org/b/isbn/${encodeURIComponent(b.isbn)}-L.jpg?default=false" alt="" loading="lazy" decoding="async" onload="this.naturalWidth > 20 ? this.classList.add('is-loaded') : this.remove()" onerror="this.remove()">` : '');
+const portraitHTML = (a, cl = '') => `<span class="portrait ${cl}"><span class="portrait__initiales" aria-hidden="true">${esc(initiales(a.nom))}</span></span>`;
+const vide = (titre, texte, lien, libelle) => `<div class="vide"><h3>${titre}</h3><p>${texte}</p>${lien ? `<a href="${lien}" class="btn">${libelle}</a>` : ''}</div>`;
+const shelf = (livres, vt = true) => `<div class="shelf">${livres.map((b) => `<div class="shelf-cell">${bookHTML(b, { vt })}</div>`).join('')}</div>`;
+function rayonHTML(g) {
+    const bs = livresGenre(g.id);
+    const dos = bs.slice(0, 9).map((b) => { const c = crc32(b.titre); return `<span class="dos" style="--toile:${toile(b.titre)};height:${62 + (c % 30)}px;width:${18 + (c % 9)}px"></span>`; }).join('');
+    return `<a href="#rayon-${g.id}" class="rayon"><span class="porte-etiquette"><strong>${esc(g.nom)}</strong><small>${bs.length}</small></span>
+        <div class="dos-serres" aria-hidden="true">${dos || '<span class="dos-vide">Rayon vide pour l\'instant</span>'}</div><div class="ledge"></div></a>`;
+}
+function ficheMini(p) {
+    const b = livre(p.livre); const a = auteur(b.auteur);
+    return `<article class="fiche"><div class="fiche__tete"><strong><a href="#livre-${b.id}">${esc(b.titre)}</a></strong><span class="fiche__cote">${esc(a.nom)}</span></div>
+        <div class="fiche__corps"><div class="ligne-emprunt"><span>${esc(p.nom)}</span>${enRetard(p) ? `<span class="tampon tampon--retard">Retard<br>${joursRetard(p)} j</span>` : ''}</div>
+        <small>Sorti le ${fr(p.sortie)}, retour attendu le ${fr(limite(p))}</small></div></article>`;
+}
+const champ = (id, label, contenu, err, cl = '') => `<div class="field ${cl}"><label for="${id}">${label}</label>${contenu}${err[id] ? `<span class="error">${esc(err[id])}</span>` : ''}</div>`;
+const inv = (err, k) => (err[k] ? ' is-invalid' : '');
+
+/* ---------------- État de l'interface ---------------- */
+const C = { q: '', genre: null, dispo: null, etat: null, tri: 'titre', page: 1 };
+let vueCatalogue = 'etagere';
+try { vueCatalogue = localStorage.getItem('booklore:vue') || 'etagere'; } catch (e) { /* ignore */ }
+let tampon = null;
+let formEtat = null; // valeurs et erreurs du dernier formulaire refusé
+
+/* ---------------- Vues ---------------- */
+const VUES = {};
+
+VUES.accueil = () => {
+    const nb = D.livres.length; const sortis = D.prets.filter((p) => !p.retour);
+    const nouveautes = [...D.livres].sort((a, b) => b.cree - a.cree).slice(0, 12);
+    const auteurs = [...D.auteurs].sort((a, b) => livresAuteur(b.id).length - livresAuteur(a.id).length).slice(0, 8);
+    const genres = [...D.genres].sort((a, b) => livresGenre(b.id).length - livresGenre(a.id).length);
+    return `<section class="page hero"><div>
+        <h1><span class="ligne"><span>Chaque livre</span></span><span class="ligne"><span>du département,</span></span><span class="ligne"><span>à sa place.</span></span></h1>
+        <p class="hero__texte"><strong>${pl(nb, 'livre')}</strong> de ${pl(D.auteurs.length, 'auteur')}, rangés dans ${pl(D.genres.length, 'rayon')}.
+        ${sortis.length ? `${sortis.length} ${sortis.length > 1 ? 'sont' : 'est'} entre les mains d'un étudiant en ce moment.` : 'Tous sont en rayon en ce moment.'}</p>
+        <div class="hero__actions"><a href="#catalogue" class="btn">Parcourir le catalogue</a><a href="#emprunts" class="btn btn--ghost">Voir les emprunts</a></div></div>
+        <div class="pile" aria-hidden="true">${nouveautes.slice(0, 4).map((b) => bookHTML(b, { meta: false })).join('')}<div class="pile__planche"></div></div></section>
+    <section class="rayonnage" data-rayonnage aria-labelledby="t-nouv"><div class="rayonnage__entete section__tete"><div><h2 id="t-nouv">Arrivés récemment</h2>
+        <p>${tactile ? 'Les derniers livres enregistrés. Glissez vers la gauche pour longer l\'étagère.' : 'Les derniers livres enregistrés. Continuez à faire défiler pour longer l\'étagère.'}</p></div><a href="#catalogue" class="lien-discret" data-tri="recent">Tout le catalogue</a></div>
+        <div class="rayonnage__piste">${nouveautes.map((b) => bookHTML(b, { vt: true })).join('')}</div><div class="rayonnage__progres" aria-hidden="true"><span></span></div></section>
+    ${sortis.length ? `<section class="page section"><div class="section__tete"><div><h2>Sortis en ce moment</h2><p>Un prêt dure ${DUREE} jours. Les plus anciens sont en tête.</p></div><a href="#emprunts" class="lien-discret">Le registre complet</a></div>
+        <div class="fiches-rang">${sortis.sort((a, b) => a.sortie.localeCompare(b.sortie)).slice(0, 6).map(ficheMini).join('')}</div></section>` : ''}
+    <section class="page section"><div class="section__tete"><div><h2>Les rayons</h2><p>Chaque livre peut être rangé dans plusieurs rayons à la fois.</p></div><a href="#rayons" class="lien-discret">Tous les rayons</a></div>
+        <div class="rayons">${genres.map(rayonHTML).join('')}</div></section>
+    <section class="page section"><div class="section__tete"><div><h2>Dans nos rayons</h2><p>Les auteurs les plus présents dans le catalogue.</p></div><a href="#auteurs" class="lien-discret">Toute la galerie</a></div>
+        <div class="galerie">${auteurs.map((a) => `<a href="#auteur-${a.id}" class="carte-auteur">${portraitHTML(a)}<div><h3>${esc(a.nom)}</h3><p>${pl(livresAuteur(a.id).length, 'livre')}, ${esc(a.nat.toLowerCase())}</p></div></a>`).join('')}</div></section>`;
+};
+
+VUES.catalogue = () => {
+    let l = D.livres.filter((b) => {
+        const a = auteur(b.auteur); const q = C.q.trim().toLowerCase();
+        if (q && !b.titre.toLowerCase().includes(q) && !a.nom.toLowerCase().includes(q)) return false;
+        if (C.genre && !b.genres.includes(C.genre)) return false;
+        if (C.etat && b.etat !== C.etat) return false;
+        if (C.dispo === 'rayon' && enCours(b.id)) return false;
+        if (C.dispo === 'sorti' && !enCours(b.id)) return false;
+        return true;
+    });
+    const tris = { titre: 'Titre, de A à Z', recent: 'Derniers arrivés', annee: 'Année de parution', populaire: 'Les plus empruntés' };
+    if (C.tri === 'recent') l.sort((a, b) => b.cree - a.cree);
+    else if (C.tri === 'annee') l.sort((a, b) => (b.annee || 0) - (a.annee || 0));
+    else if (C.tri === 'populaire') l.sort((a, b) => pretsDe(b.id).length - pretsDe(a.id).length);
+    else l.sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+    const parPage = 12; const pages = Math.max(1, Math.ceil(l.length / parPage)); C.page = Math.min(C.page, pages);
+    const visibles = l.slice((C.page - 1) * parPage, C.page * parPage);
+    const filtre = C.q || C.genre || C.dispo || C.etat;
+    const chip = (k, v, lib) => `<button type="button" class="chip ${C[k] === v ? 'is-on' : ''}" data-filtre="${k}" data-valeur="${v ?? ''}">${esc(lib)}</button>`;
+    let pag = '';
+    if (pages > 1) {
+        pag = `<nav class="pagination" aria-label="Pages du catalogue">${C.page > 1 ? `<button type="button" data-page="${C.page - 1}">Précédent</button>` : '<span class="is-disabled">Précédent</span>'}`;
+        for (let i = 1; i <= pages; i++) pag += i === C.page ? `<span class="is-current" aria-current="page">${i}</span>` : `<button type="button" data-page="${i}">${i}</button>`;
+        pag += `${C.page < pages ? `<button type="button" data-page="${C.page + 1}">Suivant</button>` : '<span class="is-disabled">Suivant</span>'}</nav>`;
+    }
+    return `<div class="page"><header class="tete-page"><div><h1>Catalogue</h1><p>${C.q ? `${pl(l.length, 'résultat')} pour « ${esc(C.q)} ».` : `${pl(l.length, 'livre')} ${l.length > 1 ? 'correspondent' : 'correspond'} à vos filtres.`}</p></div><a href="#ajouter" class="btn">Ajouter un livre</a></header>
+    <div class="catalogue ${vueCatalogue === 'liste' ? 'catalogue--liste' : ''}">
+        <aside class="filtres" aria-label="Filtres">
+            <form data-form="recherche-catalogue" role="search"><label class="sr-only" for="q">Rechercher</label><input class="input" id="q" type="search" value="${esc(C.q)}" placeholder="Titre ou auteur" autocomplete="off"></form>
+            <details class="filtres__plus" ${tactile ? '' : 'open'}><summary>Filtres${filtre ? ' actifs' : ''}</summary><div class="filtres__corps">
+            <div><h2>Rayon</h2><div class="chips">${chip('genre', null, 'Tous')}${D.genres.map((g) => chip('genre', g.id, g.nom)).join('')}</div></div>
+            <div><h2>Disponibilité</h2><div class="chips">${chip('dispo', null, 'Tous')}${chip('dispo', 'rayon', 'En rayon')}${chip('dispo', 'sorti', 'Emprunté')}</div></div>
+            <div><h2>État</h2><div class="chips">${chip('etat', null, 'Tous')}${Object.entries(ETATS).map(([k, v]) => chip('etat', k, v)).join('')}</div></div>
+            ${filtre ? '<button type="button" class="reset" data-reset>Effacer tous les filtres</button>' : ''}</div></details>
+        </aside>
+        <section><div class="barre-catalogue"><div class="tri"><label for="tri">Trier par</label><select class="select" id="tri">${Object.entries(tris).map(([k, v]) => `<option value="${k}" ${C.tri === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+            <div class="vue-toggle" role="group" aria-label="Affichage">
+            <button type="button" data-vue="etagere" aria-pressed="${vueCatalogue !== 'liste'}" title="Étagère"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4v14M8 6v12M12 4v14M16.5 5.5l3 12.5M3 20h18"/></svg><span class="sr-only">Vue étagère</span></button>
+            <button type="button" data-vue="liste" aria-pressed="${vueCatalogue === 'liste'}" title="Liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1"/></svg><span class="sr-only">Vue liste</span></button></div></div>
+            ${visibles.length ? shelf(visibles) : filtre ? `<div class="vide"><h3>Aucun livre ne correspond</h3><p>Retirez un filtre ou cherchez un autre mot.</p><button type="button" class="btn btn--ghost" data-reset>Effacer les filtres</button></div>` : vide("L'étagère est vide", 'Ajoutez le premier livre du département.', '#ajouter', 'Ajouter un livre')}
+            ${pag}</section></div></div>`;
+};
+
+VUES.livre = (id) => {
+    const b = livre(id); if (!b) return null;
+    const a = auteur(b.auteur); const prets = pretsDe(id); const ec = enCours(id);
+    const genres = b.genres.map(genre).filter(Boolean);
+    const autres = livresAuteur(a.id).filter((x) => x.id !== id);
+    const err = formEtat?.cle === 'pret' ? formEtat.err : {}; const old = formEtat?.cle === 'pret' ? formEtat.val : {};
+    const lignes = prets.map((p) => `<div class="ligne-emprunt"><div>${esc(p.nom)}<br><small>Sorti le ${fr(p.sortie)}${p.retour ? `, rendu le ${fr(p.retour)} (${duree(p)} j)` : `, retour attendu le ${fr(limite(p))}`}</small></div>
+        ${p.retour ? `<span class="tampon ${tampon === p.id ? 'tampon--frappe' : ''}">Rendu<br>${fr(p.retour).slice(0, 6)}${fr(p.retour).slice(8)}</span>`
+        : `<form data-form="retour" data-pret="${p.id}" class="retour">${enRetard(p) ? `<span class="tampon tampon--retard">Retard<br>${joursRetard(p)} j</span>` : ''}
+            <label class="sr-only" for="retour-${p.id}">Date du retour</label><input class="input" type="date" id="retour-${p.id}" value="${iso(auj())}" min="${p.sortie}" max="${iso(auj())}">
+            <button type="submit" class="btn btn--small btn--encre">Enregistrer le retour</button></form>`}</div>`).join('');
+    return `<div class="signet" aria-hidden="true"><span></span></div><div class="page"><article class="detail">
+        <div class="detail__couverture">${bookHTML(b, { lien: false, meta: false, vt: true })}</div>
+        <div><p class="fil"><a href="#catalogue">Catalogue</a> / ${genres.map((g) => esc(g.nom)).join(', ') || 'Sans rayon'}</p>
+        <h1>${esc(b.titre)}</h1>
+        <a href="#auteur-${a.id}" class="detail__auteur">${portraitHTML(a)}<span>${esc(a.nom)}<small>${pl(livresAuteur(a.id).length, 'livre')} au catalogue</small></span></a>
+        <dl class="caracteristiques">
+            <div><dt>Disponibilité</dt><dd><span class="statut ${ec ? (enRetard(ec) ? 'statut--retard' : 'statut--sorti') : ''}">${ec ? (enRetard(ec) ? 'En retard' : 'Emprunté') : 'En rayon'}</span></dd></div>
+            <div><dt>État</dt><dd><span class="etat etat--${b.etat}">${ETATS[b.etat]}</span></dd></div>
+            ${b.annee ? `<div><dt>Parution</dt><dd>${b.annee}</dd></div>` : ''}${b.pages ? `<div><dt>Pages</dt><dd>${b.pages}</dd></div>` : ''}
+            ${lecture(b.pages) ? `<div><dt>Lecture</dt><dd>${lecture(b.pages)}</dd></div>` : ''}<div><dt>ISBN</dt><dd>${esc(b.isbn)}</dd></div></dl>
+        <p class="resume">${esc(b.resume || 'Pas encore de résumé pour ce livre. Vous pouvez en ajouter un depuis la modification.')}</p>
+        ${genres.length ? `<div class="chips" style="margin-top:1.5rem">${genres.map((g) => `<a href="#rayon-${g.id}" class="chip">${esc(g.nom)}</a>`).join('')}</div>` : ''}
+        <div class="actions-livre"><a href="#modifier-${b.id}" class="btn btn--ghost">Modifier</a><button type="button" class="btn btn--danger" data-supprimer="${b.id}">Retirer du catalogue</button></div></div></article>
+    <section class="zone-emprunts"><div><h2>Fiche d'emprunt</h2><div class="fiche ${tampon ? 'fiche--secousse' : ''}"><div class="fiche__tete"><strong>${esc(b.titre)}</strong><span class="fiche__cote">${pl(prets.length, 'prêt')}</span></div>
+        <div class="fiche__corps">${lignes || "<p>Jamais emprunté pour l'instant.</p>"}${err.date_retour ? `<p class="error">${esc(err.date_retour)}</p>` : ''}</div></div></div>
+        <div><h2>Nouveau prêt</h2>${ec ? `<div class="fiche" style="--penche:.6deg"><div class="fiche__tete"><strong>Livre sorti</strong></div><div class="fiche__corps"><p>${esc(ec.nom)} l'a depuis le ${fr(ec.sortie)}. Enregistrez son retour sur la fiche pour pouvoir le prêter à nouveau.</p></div></div>`
+        : `<form data-form="pret" data-livre-id="${b.id}" class="fiche" style="--penche:.6deg" novalidate><div class="fiche__tete"><strong>Bon de sortie</strong><span class="fiche__cote">${DUREE} jours</span></div>
+            <div class="fiche__corps" style="display:grid;gap:1rem">
+            ${champ('nom_emprunteur', "Nom de l'étudiant", `<input class="input${inv(err, 'nom_emprunteur')}" id="nom_emprunteur" value="${esc(old.nom_emprunteur)}" autocomplete="off">`, err)}
+            ${champ('date_emprunt', 'Date de sortie', `<input class="input${inv(err, 'date_emprunt')}" type="date" id="date_emprunt" value="${esc(old.date_emprunt || iso(auj()))}" max="${iso(auj())}">`, err)}
+            <button type="submit" class="btn btn--encre" style="justify-self:start">Enregistrer le prêt</button></div></form>`}</div></section>
+    ${autres.length ? `<section class="section"><div class="section__tete"><h2>Du même auteur</h2><a href="#auteur-${a.id}" class="lien-discret">Voir ${esc(a.nom)}</a></div>${shelf(autres, false)}</section>` : ''}</div>`;
+};
+
+function formLivre(b) {
+    const err = formEtat?.cle === 'livre' ? formEtat.err : {};
+    const v = formEtat?.cle === 'livre' ? formEtat.val : b ? { ...b, genres: b.genres } : { etat: 'bon', genres: [] };
+    const nbErr = Object.keys(err).length;
+    const titre = v.titre || 'Titre du livre'; const a = auteur(Number(v.auteur));
+    return `<div class="page"><header class="tete-page"><div><p class="fil" style="margin:0 0 .6rem"><a href="#catalogue">Catalogue</a> / ${b ? `<a href="#livre-${b.id}">${esc(b.titre)}</a> / Modifier` : 'Nouveau livre'}</p>
+        <h1>${b ? 'Modifier le livre' : 'Ajouter un livre'}</h1>${b ? '' : "<p>Dans l'application, l'ISBN suffit à retrouver la photo de couverture. Ici, la démo dessine la couverture en toile.</p>"}</div></header>
+    <form data-form="livre" ${b ? `data-id="${b.id}"` : ''} novalidate><div class="saisie"><div class="saisie__form">
+        ${nbErr ? `<div class="alerte" role="alert">${nbErr > 1 ? `${nbErr} champs sont à corriger` : 'Un champ est à corriger'} avant d'enregistrer le livre.</div>` : ''}
+        <div class="saisie__grille">
+        ${champ('titre', 'Titre', `<input class="input${inv(err, 'titre')}" id="titre" value="${esc(v.titre)}" maxlength="150" autocomplete="off">`, err, 'col-4')}
+        ${champ('isbn', 'ISBN', `<input class="input${inv(err, 'isbn')}" id="isbn" value="${esc(v.isbn)}" inputmode="numeric" placeholder="978…" autocomplete="off">`, err, 'col-2')}
+        ${champ('auteur', 'Auteur', `<select class="select${inv(err, 'auteur')}" id="auteur"><option value="">Choisir un auteur</option>${[...D.auteurs].sort((x, y) => x.nom.localeCompare(y.nom, 'fr')).map((x) => `<option value="${x.id}" ${Number(v.auteur) === x.id ? 'selected' : ''}>${esc(x.nom)}</option>`).join('')}</select><span class="hint">Il n'est pas dans la liste ? <a href="#nouvel-auteur">Créer l'auteur</a></span>`, err, 'col-4')}
+        ${champ('annee', 'Année de parution', `<input class="input${inv(err, 'annee')}" type="number" id="annee" value="${esc(v.annee)}" inputmode="numeric">`, err, 'col-2')}
+        ${champ('pages', 'Nombre de pages', `<input class="input${inv(err, 'pages')}" type="number" id="pages" value="${esc(v.pages)}" inputmode="numeric">`, err, 'col-2')}
+        <fieldset class="field col-4"><legend class="label">État du livre</legend><div class="etats">${Object.entries(ETATS).map(([k, lib]) => `<label><input type="radio" name="etat" value="${k}" ${v.etat === k ? 'checked' : ''}><span>${lib}</span></label>`).join('')}</div></fieldset>
+        ${champ('resume', 'Résumé', `<textarea class="textarea${inv(err, 'resume')}" id="resume" maxlength="2000">${esc(v.resume)}</textarea><span class="hint" id="compteur-resume">${(v.resume || '').length} / 2000</span>`, err, 'col-6')}
+        <fieldset class="field col-6"><legend class="label">Rayons</legend><div class="chips">${D.genres.map((g) => `<label class="chip"><input type="checkbox" name="genres" value="${g.id}" ${(v.genres || []).map(Number).includes(g.id) ? 'checked' : ''}><span>${esc(g.nom)}</span></label>`).join('')}</div></fieldset>
+        </div><div class="form-actions"><button type="submit" class="btn">${b ? 'Enregistrer les modifications' : 'Ranger le livre'}</button><a href="${b ? `#livre-${b.id}` : '#catalogue'}" class="btn btn--ghost">Annuler</a></div></div>
+    <aside class="saisie__apercu" aria-live="polite"><div class="book" id="apercu" style="--toile:${toile(titre)}"><div class="book__3d"><div class="book__back"></div><div class="book__pages"></div><div class="book__cover"><div class="cover-fallback" aria-hidden="true"><span class="cover-fallback__titre" id="apercu-titre">${esc(titre)}</span><span class="cover-fallback__orn"></span><span class="cover-fallback__auteur" id="apercu-auteur">${esc(a ? a.nom : 'Auteur')}</span></div></div></div></div>
+        <p>La couverture se met à jour pendant la saisie.</p></aside></div></form></div>`;
+}
+VUES.ajouter = () => formLivre(null);
+VUES.modifier = (id) => (livre(id) ? formLivre(livre(id)) : null);
+
+VUES.auteurs = () => `<div class="page"><header class="tete-page"><div><h1>Galerie des auteurs</h1><p>${pl(D.auteurs.length, 'auteur')} au catalogue. Dans l'application, les portraits viennent de Wikipédia.</p></div><a href="#nouvel-auteur" class="btn">Ajouter un auteur</a></header>
+    <div class="galerie galerie--grande">${[...D.auteurs].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map((a) => `<a href="#auteur-${a.id}" class="carte-auteur">${portraitHTML(a)}<div><h3>${esc(a.nom)}</h3><p>${pl(livresAuteur(a.id).length, 'livre')}<br>${esc([a.nat, a.an].filter(Boolean).join(', '))}</p></div></a>`).join('')}</div></div>`;
+
+VUES.auteur = (id) => {
+    const a = auteur(id); if (!a) return null;
+    const bs = livresAuteur(id).sort((x, y) => (x.annee || 0) - (y.annee || 0));
+    const pages = bs.reduce((s, b) => s + (b.pages || 0), 0);
+    const ans = bs.map((b) => b.annee).filter(Boolean);
+    const gs = [...new Set(bs.flatMap((b) => b.genres))].map(genre).filter(Boolean);
+    return `<div class="page"><header class="auteur-tete">${portraitHTML(a, 'portrait--vif')}<div><p class="fil"><a href="#auteurs">Auteurs</a></p><h1>${esc(a.nom)}</h1>
+        <p style="color:var(--papier-doux);margin-top:.7rem">${esc([a.nat, a.an ? `naissance en ${a.an}` : null].filter(Boolean).join(', ') || 'Nationalité et naissance non renseignées')}</p>
+        <div class="chiffres"><div><strong>${bs.length}</strong><span>${bs.length > 1 ? 'livres' : 'livre'} au catalogue</span></div>${pages ? `<div><strong>${pages.toLocaleString('fr-FR')}</strong><span>pages au total</span></div>` : ''}
+        ${ans.length ? `<div><strong>${Math.min(...ans)}${Math.min(...ans) !== Math.max(...ans) ? `–${Math.max(...ans)}` : ''}</strong><span>années de parution</span></div>` : ''}</div>
+        ${gs.length ? `<div class="chips">${gs.map((g) => `<a href="#rayon-${g.id}" class="chip">${esc(g.nom)}</a>`).join('')}</div>` : ''}</div></header>
+    <section class="section" style="padding-top:2rem"><div class="section__tete"><h2>Ses livres, par date de parution</h2><a href="#ajouter" class="lien-discret">Ajouter un livre</a></div>
+    ${bs.length ? shelf(bs) : vide(`Aucun livre de ${esc(a.nom)} pour l'instant`, '', '#ajouter', 'Ajouter un livre')}</section></div>`;
+};
+
+function petitForm(cle, titre, fil, intro, champs, bouton, retour) {
+    return `<div class="page"><header class="tete-page"><div><p class="fil" style="margin:0 0 .6rem">${fil}</p><h1>${titre}</h1><p>${intro}</p></div></header>
+    <form data-form="${cle}" class="carte-form saisie__form" novalidate><div class="saisie__grille">${champs}</div>
+    <div class="form-actions"><button type="submit" class="btn">${bouton}</button><a href="${retour}" class="btn btn--ghost">Annuler</a></div></form></div>`;
+}
+VUES['nouvel-auteur'] = () => {
+    const err = formEtat?.cle === 'auteur' ? formEtat.err : {}; const v = formEtat?.cle === 'auteur' ? formEtat.val : {};
+    return petitForm('auteur', 'Ajouter un auteur', '<a href="#auteurs">Auteurs</a> / Nouvel auteur', "Écrivez le nom complet tel qu'il apparaît sur ses livres.",
+        champ('nom', 'Nom complet', `<input class="input${inv(err, 'nom')}" id="nom" value="${esc(v.nom)}" maxlength="100" placeholder="Chinua Achebe" autocomplete="off">`, err, 'col-6')
+        + champ('nat', 'Nationalité', `<input class="input${inv(err, 'nat')}" id="nat" value="${esc(v.nat)}" maxlength="60" placeholder="Nigériane">`, err, 'col-4')
+        + champ('an', 'Année de naissance', `<input class="input${inv(err, 'an')}" type="number" id="an" value="${esc(v.an)}" inputmode="numeric">`, err, 'col-2'),
+        "Ajouter l'auteur", '#auteurs');
+};
+VUES.rayons = () => `<div class="page"><header class="tete-page"><div><h1>Les rayons</h1><p>Chaque rayon regroupe les livres d'un même genre. Un livre peut se trouver dans plusieurs rayons à la fois.</p></div><a href="#nouveau-rayon" class="btn">Créer un rayon</a></header>
+    <div class="rayons">${[...D.genres].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(rayonHTML).join('')}</div></div>`;
+VUES['nouveau-rayon'] = () => {
+    const err = formEtat?.cle === 'rayon' ? formEtat.err : {}; const v = formEtat?.cle === 'rayon' ? formEtat.val : {};
+    return petitForm('rayon', 'Créer un rayon', '<a href="#rayons">Rayons</a> / Nouveau rayon', "Le nom apparaît sur l'étiquette du rayon et dans les filtres du catalogue.",
+        champ('nom-rayon', 'Nom du rayon', `<input class="input${inv(err, 'nom-rayon')}" id="nom-rayon" value="${esc(v['nom-rayon'])}" maxlength="40" placeholder="Bases de données" autocomplete="off">`, err, 'col-6'), 'Créer le rayon', '#rayons');
+};
+VUES.rayon = (id) => {
+    const g = genre(id); if (!g) return null;
+    const bs = livresGenre(id).sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+    return `<div class="page"><header class="tete-page"><div><p class="fil" style="margin:0 0 .8rem"><a href="#rayons">Rayons</a></p><span class="porte-etiquette" style="margin-bottom:1rem"><strong style="font-size:1.6rem">${esc(g.nom)}</strong></span>
+        <p>${pl(bs.length, 'livre')} dans ce rayon, ${bs.filter((b) => !enCours(b.id)).length} en rayon en ce moment.</p></div><a href="#catalogue" class="lien-discret" data-genre="${g.id}">Filtrer davantage dans le catalogue</a></header>
+        ${bs.length ? shelf(bs) : vide('Ce rayon est vide', `Cochez « ${esc(g.nom)} » en ajoutant ou en modifiant un livre pour l'y ranger.`, '#ajouter', 'Ajouter un livre')}</div>`;
+};
+function registre(vue) {
+    let l;
+    if (vue === 'rendus') l = D.prets.filter((p) => p.retour).sort((a, b) => b.retour.localeCompare(a.retour));
+    else l = D.prets.filter((p) => !p.retour && (vue !== 'retards' || enRetard(p))).sort((a, b) => a.sortie.localeCompare(b.sortie));
+    const n = { emprunts: D.prets.filter((p) => !p.retour).length, retards: D.prets.filter(enRetard).length, rendus: D.prets.filter((p) => p.retour).length };
+    const tab = (h, lib, cl = '') => `<a href="#${h}" class="${cl}" ${vue === h ? 'aria-current="page"' : ''}>${lib} <span class="compte">${n[h]}</span></a>`;
+    const cartes = l.map((p) => { const b = livre(p.livre); const a = auteur(b.auteur);
+        return `<article class="fiche ${tampon === p.id ? 'fiche--secousse' : ''}" style="--penche:${[-0.8, 0.5, -0.3, 0.9][p.id % 4]}deg"><div class="fiche__tete"><strong>${esc(p.nom)}</strong><span class="fiche__cote">n° ${String(p.id).padStart(4, '0')}</span></div>
+        <div class="fiche__livre">${bookHTML(b, { meta: false })}<div><a href="#livre-${b.id}"><strong>${esc(b.titre)}</strong></a><br><small>${esc(a.nom)}</small><br><small>Sorti le ${fr(p.sortie)}</small><br>
+        ${p.retour ? `<small>Rendu le ${fr(p.retour)}, après ${duree(p)} j</small><div style="margin-top:.6rem"><span class="tampon ${tampon === p.id ? 'tampon--frappe' : ''}">Rendu<br>${fr(p.retour).slice(0, 6)}${fr(p.retour).slice(8)}</span></div>`
+        : `<small class="${enRetard(p) ? 'retard' : ''}">Retour attendu le ${fr(limite(p))}${enRetard(p) ? `, ${joursRetard(p)} j de retard` : ''}</small>
+          <form data-form="retour" data-pret="${p.id}" class="retour" style="margin-top:.6rem"><label class="sr-only" for="retour-${p.id}">Date du retour</label><input class="input" type="date" id="retour-${p.id}" value="${iso(auj())}" min="${p.sortie}" max="${iso(auj())}"><button type="submit" class="btn btn--small btn--encre">Enregistrer le retour</button></form>`}</div></div></article>`; }).join('');
+    const vides = { retards: ['Aucun retard', `Tous les livres sortis sont encore dans leur délai de ${DUREE} jours.`], rendus: ['Aucun retour enregistré', 'Les prêts rendus apparaîtront ici, avec leur tampon.'], emprunts: ['Aucun livre sorti', "Ouvrez la fiche d'un livre pour enregistrer un prêt."] };
+    return `<div class="page"><header class="tete-page"><div><h1>Registre des emprunts</h1><p>Un prêt dure ${DUREE} jours. Pour prêter un livre, ouvrez sa fiche depuis le catalogue.</p></div></header>
+    <nav class="onglets" aria-label="Filtrer le registre">${tab('emprunts', 'En cours')}${tab('retards', 'En retard', 'onglet-retard')}${tab('rendus', 'Rendus')}</nav>
+    ${l.length ? `<div class="registre">${cartes}</div>` : vide(vides[vue][0], vides[vue][1])}</div>`;
+}
+VUES.emprunts = () => registre('emprunts');
+VUES.retards = () => registre('retards');
+VUES.rendus = () => registre('rendus');
+
+/* ---------------- Routeur ---------------- */
+const app = $('#app');
+const NAV = { accueil: 'accueil', catalogue: 'catalogue', livre: 'catalogue', ajouter: 'catalogue', modifier: 'catalogue', auteurs: 'auteurs', auteur: 'auteurs', 'nouvel-auteur': 'auteurs', rayons: 'rayons', rayon: 'rayons', 'nouveau-rayon': 'rayons', emprunts: 'emprunts', retards: 'emprunts', rendus: 'emprunts' };
+const TITRES = { accueil: 'Accueil', catalogue: 'Catalogue', ajouter: 'Ajouter un livre', auteurs: 'Auteurs', rayons: 'Rayons', emprunts: 'Emprunts', retards: 'Emprunts', rendus: 'Emprunts', 'nouvel-auteur': 'Ajouter un auteur', 'nouveau-rayon': 'Créer un rayon' };
+let routeCourante = null;
+
+function lire(h) {
+    const m = (h || '').replace(/^#/, '').match(/^([a-z-]+?)(?:-(\d+))?$/);
+    if (!m || !VUES[m[1]]) return { nom: 'accueil' };
+    return { nom: m[1], id: m[2] ? Number(m[2]) : undefined };
+}
+function rendre(garderScroll = false) {
+    const r = lire(location.hash);
+    let contenu = VUES[r.nom](r.id);
+    if (contenu === null) { contenu = `<div class="page">${vide('Introuvable', "Cette fiche n'existe plus : elle a peut-être été retirée du catalogue.", '#catalogue', 'Retour au catalogue')}</div>`; }
+    if (ST) ST.getAll().forEach((t) => t.kill());
+    app.innerHTML = contenu;
+    $$('.nav a').forEach((a) => a.toggleAttribute('aria-current', a.dataset.nav === NAV[r.nom]));
+    $$('.nav a[aria-current]').forEach((a) => a.setAttribute('aria-current', 'page'));
+    $('.nav').classList.remove('is-open');
+    const b = r.nom === 'livre' || r.nom === 'modifier' ? livre(r.id) : null;
+    const a = r.nom === 'auteur' ? auteur(r.id) : null;
+    document.title = `${b ? b.titre : a ? a.nom : TITRES[r.nom] || 'Accueil'} — BookLore`;
+    if (!garderScroll) { lenis ? lenis.scrollTo(0, { immediate: true }) : scrollTo(0, 0); }
+    routeCourante = r;
+    animerVue(r);
+    tampon = null;
+}
+let ignorerHash = false;
+addEventListener('hashchange', () => { if (ignorerHash) { ignorerHash = false; return; } formEtat = null; transition(() => rendre()); });
+
+function transition(maj, el) {
+    if (document.startViewTransition && !reduit) {
+        if (el) el.style.viewTransitionName = 'livre-choisi';
+        const vt = document.startViewTransition(() => {
+            maj();
+            const cible = $('.detail__couverture .book__3d');
+            if (el && cible) cible.style.viewTransitionName = 'livre-choisi';
+        });
+        vt.finished.finally(() => { $$('[style*="livre-choisi"]').forEach((x) => (x.style.viewTransitionName = '')); });
+    } else maj();
+}
+function aller(h, el) {
+    formEtat = null;
+    if (location.hash === h) { transition(() => rendre(), el); return; }
+    ignorerHash = true;
+    location.hash = h;
+    transition(() => rendre(), el);
+}
+
+/* ---------------- Animations par vue ---------------- */
+function animerVue(r) {
+    if (r.nom === 'accueil') {
+        if (introEnCours) return; // l'intro lancera l'entrée de l'accueil
+        entreeAccueil(); etagere();
+    }
+    if (r.nom === 'livre') { inclinaison(); }
+    if (tampon && anime) { const f = $('.fiche--secousse'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+}
+function entreeAccueil() {
+    if (!anime || !$('.hero')) return;
+    gsap.timeline({ defaults: { ease: 'power3.out' } })
+        .from('.hero h1 .ligne > span', { yPercent: 110, duration: 1, stagger: 0.12 })
+        .from('.hero__texte, .hero__actions', { opacity: 0, y: 16, duration: 0.7, stagger: 0.1 }, '-=0.6')
+        .from('.pile .book', { y: -140, opacity: 0, rotate: (i) => (i % 2 ? 12 : -14), duration: 0.9, stagger: 0.09, ease: 'bounce.out' }, '-=0.9')
+        .from('.pile__planche', { scaleX: 0.6, opacity: 0, duration: 0.6 }, '<');
+}
+function etagere() {
+    const ray = $('[data-rayonnage]');
+    if (!ray || !anime || !ST || tactile) return;
+    const piste = $('.rayonnage__piste', ray); const barre = $('.rayonnage__progres span', ray); const livres = $$('.book__3d', piste);
+    const dist = () => Math.max(0, piste.scrollWidth - innerWidth);
+    if (dist() < 40) return;
+    gsap.to(piste, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: ray, start: 'top top', end: () => '+=' + dist(), pin: true, scrub: 0.7, invalidateOnRefresh: true,
+        onUpdate: (st) => { barre.style.transform = `scaleX(${st.progress})`; const v = gsap.utils.clamp(-14, 14, st.getVelocity() / 160); gsap.to(livres, { rotateY: -24 - v, duration: 0.5, overwrite: 'auto' }); } } });
+}
+// Sur téléphone : la barre de progression suit le glissement de l'étagère
+document.addEventListener('scroll', (e) => {
+    const p = e.target; if (!(p instanceof Element) || !p.classList.contains('rayonnage__piste')) return;
+    const s = $('.rayonnage__progres span'); const max = p.scrollWidth - p.clientWidth;
+    if (s && max > 0) s.style.transform = `scaleX(${p.scrollLeft / max})`;
+}, true);
+function inclinaison() {
+    const g = $('.detail__couverture .book');
+    if (!g || !anime) return;
+    const corps = $('.book__3d', g);
+    gsap.set(corps, { rotateY: -16, rotateX: 3 });
+    if (!tactile) {
+        const rx = gsap.quickTo(corps, 'rotateX', { duration: 0.5, ease: 'power2.out' }); const ry = gsap.quickTo(corps, 'rotateY', { duration: 0.5, ease: 'power2.out' });
+        g.addEventListener('pointermove', (e) => { const r = g.getBoundingClientRect(); ry(-16 + ((e.clientX - r.left) / r.width - 0.5) * 26); rx(3 - ((e.clientY - r.top) / r.height - 0.5) * 14); });
+        g.addEventListener('pointerleave', () => { ry(-16); rx(3); });
+    } else {
+        // Au toucher : la couverture pivote, puis revient
+        g.addEventListener('pointerdown', () => gsap.fromTo(corps, { rotateY: -16 }, { rotateY: -40, duration: 0.35, yoyo: true, repeat: 1, ease: 'power2.inOut' }));
+    }
+}
+addEventListener('scroll', () => {
+    const s = $('.signet span'); if (!s) return;
+    const max = document.documentElement.scrollHeight - innerHeight; s.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+}, { passive: true });
+
+/* ---------------- Défilement doux (souris) ---------------- */
+let lenis = null;
+if (anime && window.Lenis && !tactile) {
+    lenis = new window.Lenis({ lerp: 0.11 });
+    if (ST) { lenis.on('scroll', ST.update); gsap.ticker.add((t) => lenis.raf(t * 1000)); gsap.ticker.lagSmoothing(0); }
+}
+
+/* ---------------- Messages ---------------- */
+function bordereau(texte) {
+    $('.bordereau')?.remove();
+    const el = document.createElement('div');
+    el.className = 'bordereau'; el.setAttribute('role', 'status');
+    const d = new Date();
+    el.innerHTML = `<span>${esc(texte)}</span><span class="tampon">Fait<br>${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</span><button type="button" aria-label="Fermer le message">×</button>`;
+    document.body.appendChild(el);
+    const retirer = () => { el.classList.add('is-out'); setTimeout(() => el.remove(), 400); };
+    el.querySelector('button').addEventListener('click', retirer);
+    setTimeout(retirer, 6000);
+}
+
+/* ---------------- Formulaires (mêmes règles que les Form Requests) ---------------- */
+const ANNEE = new Date().getFullYear();
+function valider(cle, f) {
+    const e = {}; const v = {};
+    const val = (id) => (f.querySelector('#' + id)?.value ?? '').trim();
+    if (cle === 'livre') {
+        Object.assign(v, { titre: val('titre'), isbn: val('isbn').replace(/[^0-9Xx]/g, '').toUpperCase(), auteur: val('auteur'), annee: val('annee'), pages: val('pages'), resume: val('resume'),
+            etat: f.querySelector('[name=etat]:checked')?.value || '', genres: $$('[name=genres]:checked', f).map((x) => Number(x.value)) });
+        const id = Number(f.dataset.id) || null;
+        if (!v.titre) e.titre = 'Indiquez le titre du livre.'; else if (v.titre.length < 2) e.titre = 'Le titre doit faire au moins 2 caractères.';
+        if (!v.isbn) e.isbn = "Indiquez l'ISBN, il figure au dos du livre.";
+        else if (!/^(\d{9}[\dX]|\d{13})$/.test(v.isbn)) e.isbn = 'Un ISBN compte 10 ou 13 chiffres (le dernier peut être un X).';
+        else if (D.livres.some((b) => b.isbn === v.isbn && b.id !== id)) e.isbn = 'Un livre du catalogue porte déjà cet ISBN.';
+        if (!v.auteur) e.auteur = "Choisissez l'auteur du livre.";
+        if (v.annee && (v.annee < 1000 || v.annee > ANNEE + 1)) e.annee = v.annee < 1000 ? "L'année doit avoir 4 chiffres." : "L'année ne peut pas être dans le futur.";
+        if (v.pages && (v.pages < 1 || v.pages > 10000)) e.pages = 'Un livre a entre 1 et 10 000 pages.';
+        if (v.resume && v.resume.length < 10) e.resume = 'Le résumé doit faire au moins 10 caractères.';
+    }
+    if (cle === 'auteur') {
+        Object.assign(v, { nom: val('nom'), nat: val('nat'), an: val('an') });
+        if (!v.nom) e.nom = "Indiquez le nom de l'auteur."; else if (v.nom.length < 2) e.nom = 'Le nom doit faire au moins 2 caractères.';
+        else if (D.auteurs.some((a) => a.nom.toLowerCase() === v.nom.toLowerCase())) e.nom = 'Cet auteur est déjà dans le catalogue.';
+        if (v.nat && v.nat.length < 3) e.nat = 'La nationalité doit faire au moins 3 caractères.';
+        if (v.an && (v.an < 1000 || v.an > ANNEE)) e.an = v.an < 1000 ? "L'année de naissance doit avoir 4 chiffres." : "L'année de naissance ne peut pas être dans le futur.";
+    }
+    if (cle === 'rayon') {
+        v['nom-rayon'] = val('nom-rayon');
+        if (!v['nom-rayon']) e['nom-rayon'] = 'Donnez un nom au rayon.'; else if (v['nom-rayon'].length < 3) e['nom-rayon'] = 'Le nom doit faire au moins 3 caractères.';
+        else if (D.genres.some((g) => g.nom.toLowerCase() === v['nom-rayon'].toLowerCase())) e['nom-rayon'] = 'Ce rayon existe déjà.';
+    }
+    if (cle === 'pret') {
+        Object.assign(v, { nom_emprunteur: val('nom_emprunteur'), date_emprunt: val('date_emprunt') });
+        if (!v.nom_emprunteur) e.nom_emprunteur = "Indiquez le nom de l'étudiant qui emprunte."; else if (v.nom_emprunteur.length < 2) e.nom_emprunteur = 'Le nom doit faire au moins 2 caractères.';
+        if (!v.date_emprunt) e.date_emprunt = "Indiquez la date de l'emprunt."; else if (v.date_emprunt > iso(auj())) e.date_emprunt = "La date d'emprunt ne peut pas être dans le futur.";
+    }
+    return { e, v };
+}
+function refuser(cle, val, err) {
+    formEtat = { cle, val, err };
+    rendre(true);
+    const premier = $('.is-invalid');
+    if (premier) { premier.focus({ preventScroll: true }); premier.scrollIntoView({ block: 'center', behavior: anime ? 'smooth' : 'auto' }); if (anime) gsap.fromTo(premier, { x: -6 }, { x: 0, duration: 0.4, ease: 'elastic.out(1, 0.3)' }); }
+}
+
+document.addEventListener('submit', (ev) => {
+    const f = ev.target.closest('[data-form]'); if (!f) return;
+    ev.preventDefault();
+    const cle = f.dataset.form;
+    if (cle === 'recherche-catalogue') { C.q = $('#q', f).value; C.page = 1; rendre(true); $('#q')?.focus(); return; }
+    if (cle === 'recherche') { C.q = $('#recherche-globale').value; C.page = 1; Object.assign(C, { genre: null, dispo: null, etat: null }); fermerTiroir(); aller('#catalogue'); return; }
+    if (cle === 'retour') {
+        const p = D.prets.find((x) => x.id === Number(f.dataset.pret)); const d = f.querySelector('input').value;
+        if (!d || d < p.sortie || d > iso(auj())) { formEtat = { cle: 'pret', val: {}, err: { date_retour: d > iso(auj()) ? 'La date de retour ne peut pas être dans le futur.' : "Le livre ne peut pas revenir avant d'être parti." } }; rendre(true); return; }
+        p.retour = d; sauver(); tampon = p.id; formEtat = null;
+        bordereau(`« ${livre(p.livre).titre} » est de retour en rayon.`); rendre(true); return;
+    }
+    const { e, v } = valider(cle, f);
+    if (Object.keys(e).length) { refuser(cle, v, e); return; }
+    formEtat = null;
+    if (cle === 'livre') {
+        const id = Number(f.dataset.id) || null;
+        const data = { titre: v.titre, isbn: v.isbn, auteur: Number(v.auteur), annee: v.annee ? Number(v.annee) : null, pages: v.pages ? Number(v.pages) : null, etat: v.etat || 'bon', resume: v.resume, genres: v.genres };
+        if (id) { Object.assign(livre(id), data); sauver(); bordereau(`Les modifications de « ${data.titre} » sont enregistrées.`); aller('#livre-' + id); }
+        else { const n = { id: nid(D.livres), cree: Date.now(), ...data }; D.livres.push(n); sauver(); bordereau(`« ${n.titre} » est rangé dans le catalogue.`); aller('#livre-' + n.id); }
+    }
+    if (cle === 'auteur') { const n = { id: nid(D.auteurs), nom: v.nom, nat: v.nat || null, an: v.an ? Number(v.an) : null }; D.auteurs.push(n); sauver(); bordereau(`${n.nom} rejoint la galerie des auteurs.`); aller('#auteur-' + n.id); }
+    if (cle === 'rayon') { D.genres.push({ id: nid(D.genres), nom: v['nom-rayon'] }); sauver(); bordereau(`Le rayon « ${v['nom-rayon']} » est créé.`); aller('#rayons'); }
+    if (cle === 'pret') {
+        const idLivre = Number(f.dataset.livreId);
+        if (enCours(idLivre)) { refuser('pret', v, { nom_emprunteur: "Ce livre est déjà emprunté. Enregistrez d'abord son retour." }); return; }
+        const p = { id: nid(D.prets), livre: idLivre, nom: v.nom_emprunteur, sortie: v.date_emprunt, retour: null }; D.prets.push(p); sauver();
+        bordereau(`Prêt enregistré pour ${p.nom}. Retour attendu le ${fr(limite(p))}.`); rendre(true);
+        if (anime) gsap.from('.zone-emprunts .fiche', { y: 20, rotate: 2, opacity: 0, duration: 0.6, stagger: 0.1, ease: 'power3.out' });
+    }
+});
+
+/* ---------------- Clics ---------------- */
+document.addEventListener('click', (ev) => {
+    const t = ev.target;
+    const lienLivre = t.closest('a[data-livre]');
+    if (lienLivre) { ev.preventDefault(); aller(lienLivre.getAttribute('href'), $('.book__3d', lienLivre)); return; }
+    const tri = t.closest('[data-tri]'); if (tri) { C.tri = tri.dataset.tri; C.page = 1; }
+    const lienGenre = t.closest('a[data-genre]'); if (lienGenre) { Object.assign(C, { genre: Number(lienGenre.dataset.genre), q: '', dispo: null, etat: null, page: 1 }); }
+    const filtre = t.closest('[data-filtre]');
+    if (filtre) { const k = filtre.dataset.filtre; const val = filtre.dataset.valeur; C[k] = val === '' ? null : k === 'genre' ? Number(val) : val; C.page = 1; rendre(true); return; }
+    if (t.closest('[data-reset]')) { Object.assign(C, { q: '', genre: null, dispo: null, etat: null, page: 1 }); rendre(true); return; }
+    const pg = t.closest('[data-page]'); if (pg) { C.page = Number(pg.dataset.page); rendre(); return; }
+    const vue = t.closest('[data-vue]');
+    if (vue) {
+        const appliquer = () => { vueCatalogue = vue.dataset.vue; try { localStorage.setItem('booklore:vue', vueCatalogue); } catch (e) { /* ignore */ } $('.catalogue').classList.toggle('catalogue--liste', vueCatalogue === 'liste'); $$('[data-vue]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.vue === vueCatalogue))); };
+        if (anime) gsap.to('.shelf', { opacity: 0, y: 8, duration: 0.18, onComplete: () => { appliquer(); gsap.to('.shelf', { opacity: 1, y: 0, duration: 0.35 }); } }); else appliquer();
+        return;
+    }
+    const sup = t.closest('[data-supprimer]'); if (sup) { ouvrirSuppression(Number(sup.dataset.supprimer)); return; }
+    if (t.closest('[data-ouvrir-recherche]')) { ouvrirTiroir(); return; }
+    if (t.closest('.menu-toggle')) { const o = $('.nav').classList.toggle('is-open'); $('.menu-toggle').setAttribute('aria-expanded', String(o)); return; }
+    if (t.closest('[data-reinit]')) { D = fraiches(); sauver(); Object.assign(C, { q: '', genre: null, dispo: null, etat: null, tri: 'titre', page: 1 }); bordereau('La démo est revenue à ses données de départ.'); aller('#accueil'); }
+});
+document.addEventListener('change', (ev) => { if (ev.target.id === 'tri') { C.tri = ev.target.value; C.page = 1; rendre(true); } });
+document.addEventListener('input', (ev) => {
+    const id = ev.target.id;
+    if (id === 'titre' && $('#apercu')) { const v = ev.target.value.trim() || 'Titre du livre'; $('#apercu-titre').textContent = v; $('#apercu').style.setProperty('--toile', toile(v)); }
+    if (id === 'auteur' && $('#apercu')) { const o = ev.target.selectedOptions[0]; $('#apercu-auteur').textContent = o && o.value ? o.textContent : 'Auteur'; }
+    if (id === 'resume') { const c = $('#compteur-resume'); if (c) c.textContent = `${ev.target.value.length} / 2000`; }
+});
+
+/* ---------------- Suppression ---------------- */
+const dlg = $('#confirmer');
+let aSupprimer = null;
+function ouvrirSuppression(id) { aSupprimer = id; $('[data-titre]', dlg).textContent = livre(id).titre; dlg.showModal(); }
+$('[data-annuler]', dlg).addEventListener('click', () => dlg.close());
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+$('[data-confirmer-suppression]', dlg).addEventListener('click', () => {
+    const b = livre(aSupprimer); dlg.close();
+    D.livres = D.livres.filter((x) => x.id !== aSupprimer); D.prets = D.prets.filter((p) => p.livre !== aSupprimer); sauver();
+    bordereau(`« ${b.titre} » a été retiré du catalogue.`); aller('#catalogue');
+});
+
+/* ---------------- Recherche ---------------- */
+const tiroir = $('#tiroir');
+function ouvrirTiroir() { tiroir.classList.add('is-open'); tiroir.setAttribute('aria-hidden', 'false'); lenis?.stop(); $('#recherche-globale').value = ''; setTimeout(() => $('#recherche-globale').focus(), 60); }
+function fermerTiroir() { tiroir.classList.remove('is-open'); tiroir.setAttribute('aria-hidden', 'true'); lenis?.start(); }
+tiroir.addEventListener('click', (e) => { if (e.target === tiroir) fermerTiroir(); });
+addEventListener('keydown', (e) => {
+    const saisie = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
+    if ((e.key === '/' && !saisie) || (e.key.toLowerCase() === 'k' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); ouvrirTiroir(); }
+    if (e.key === 'Escape' && tiroir.classList.contains('is-open')) fermerTiroir();
+});
+
+/* ---------------- Intro ---------------- */
+const intro = $('#intro');
+let introEnCours = false;
+let dejaVu = false;
+try { dejaVu = sessionStorage.getItem('booklore:intro') === '1'; } catch (e) { dejaVu = false; }
+if (!anime || dejaVu || document.visibilityState === 'hidden') intro.remove();
+else {
+    introEnCours = true;
+    lenis?.stop();
+    const livreIntro = $('.intro__livre', intro);
+    const fin = () => {
+        if (!introEnCours) return;
+        introEnCours = false;
+        try { sessionStorage.setItem('booklore:intro', '1'); } catch (e) { /* ignore */ }
+        lenis?.start(); intro.remove();
+        if (lire(location.hash).nom === 'accueil') { entreeAccueil(); etagere(); }
+    };
+    gsap.set(livreIntro, { rotateX: 58, rotateZ: -10, y: 180, scale: 0.72, opacity: 0 });
+    gsap.set('.intro__passer', { opacity: 0 });
+    const tl = gsap.timeline({ onComplete: fin, delay: 0.2 });
+    tl.to('.intro__lampe', { opacity: 1, duration: 1, ease: 'power2.out' })
+      .to('.intro__passer', { opacity: 1, duration: 0.4 }, '<')
+      .to(livreIntro, { rotateX: 22, rotateZ: -4, y: 0, scale: 1, opacity: 1, duration: 1.2, ease: 'power3.out' }, '-=0.6')
+      .to('.intro__titre', { backgroundPosition: '0% 0', duration: 1.2, ease: 'power2.inOut' }, '-=0.35')
+      .to(livreIntro, { rotateX: 0, rotateZ: 0, x: () => livreIntro.offsetWidth / 2, duration: 1, ease: 'power2.inOut' })
+      .to('.intro__couverture', { rotateY: -179, duration: 1.15, ease: 'power2.inOut' }, '<0.1')
+      .to('.intro__feuillet', { rotateY: (i, el, all) => -178 + (all.length - i) * 0.8, duration: 0.75, ease: 'power1.inOut', stagger: 0.085 }, '-=0.55')
+      .to('.intro__ecrit', { clipPath: 'inset(0 0% 0 0)', duration: 0.9, ease: 'power2.out', stagger: 0.3 }, '-=0.15')
+      .to({}, { duration: 0.7 })
+      .to(livreIntro, { scale: 4, y: 40, duration: 1.05, ease: 'power3.in' })
+      .to(intro, { opacity: 0, duration: 0.45, ease: 'power1.in' }, '-=0.45');
+    const passer = () => { tl.kill(); gsap.to(intro, { opacity: 0, duration: 0.3, onComplete: fin }); };
+    $('.intro__passer', intro).addEventListener('click', passer);
+    addEventListener('keydown', (e) => { if (e.key === 'Escape' && introEnCours) passer(); });
+}
+
+rendre();
+})();
+
+</script>
+
+</body>
+</html>
