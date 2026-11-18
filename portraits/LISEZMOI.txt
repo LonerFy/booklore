@@ -1,0 +1,27 @@
+Images des auteurs
+
+Déposez ici une image par auteur, au format JPG, nommée exactement comme ci-dessous.
+Elle remplace alors l'ex-libris de l'auteur sur tout le site. Un auteur sans image garde son ex-libris.
+Format conseillé : portrait vertical, environ 500 x 600 pixels, moins de 150 ko.
+
+chinua-achebe.jpg    Chinua Achebe
+mariama-ba.jpg    Mariama Bâ
+ahmadou-kourouma.jpg    Ahmadou Kourouma
+camara-laye.jpg    Camara Laye
+cheikh-hamidou-kane.jpg    Cheikh Hamidou Kane
+olympe-bhely-quenum.jpg    Olympe Bhêly-Quenum
+chimamanda-ngozi-adichie.jpg    Chimamanda Ngozi Adichie
+albert-camus.jpg    Albert Camus
+victor-hugo.jpg    Victor Hugo
+antoine-de-saint-exupery.jpg    Antoine de Saint-Exupéry
+gabriel-garcia-marquez.jpg    Gabriel García Márquez
+george-orwell.jpg    George Orwell
+aldous-huxley.jpg    Aldous Huxley
+isaac-asimov.jpg    Isaac Asimov
+frank-herbert.jpg    Frank Herbert
+robert-c-martin.jpg    Robert C. Martin
+steve-mcconnell.jpg    Steve McConnell
+andrew-s-tanenbaum.jpg    Andrew S. Tanenbaum
+thomas-h-cormen.jpg    Thomas H. Cormen
+erich-gamma.jpg    Erich Gamma
+yuval-noah-harari.jpg    Yuval Noah Harari

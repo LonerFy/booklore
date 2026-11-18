@@ -1028,10 +1028,14 @@ function bookHTML(b, o = {}) {
 /* Photos de couvertures : servies depuis le dossier covers/ du site (rapide). Sans photo, la couverture en toile reste visible. */
 const COUVERTURES = window.BOOKLORE_COUVERTURES === true;
 const couverture = (b) => (COUVERTURES && /^[0-9X]{10,13}$/.test(b.isbn || '') ? `<img src="covers/${b.isbn}.jpg" alt="" loading="lazy" decoding="async" onload="this.naturalWidth > 20 ? this.classList.add('is-loaded') : this.remove()" onerror="this.remove()">` : '');
+/* Nom de fichier d'un auteur : "Gabriel García Márquez" → gabriel-garcia-marquez */
+const slug = (nom) => nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 /* Ex-libris de l'auteur : son monogramme, et en bas les dos de ses livres du catalogue */
 const portraitHTML = (a, cl = '') => {
     const dos = livresAuteur(a.id).slice(0, 7).map((b) => { const c = crc32(b.titre); return `<i style="--toile:${toile(b.titre)};height:${58 + (c % 34)}%"></i>`; }).join('');
-    return `<span class="portrait ${cl}" aria-hidden="true"><span class="portrait__cadre"><span class="portrait__initiales">${esc(initiales(a.nom))}</span><span class="portrait__mention">Ex-libris</span>${dos ? `<span class="portrait__dos">${dos}</span>` : ''}</span></span>`;
+    // Si une image portraits/<nom-de-l-auteur>.jpg a été ajoutée au site, elle recouvre l'ex-libris.
+    const image = COUVERTURES ? `<img src="portraits/${slug(a.nom)}.jpg" alt="" loading="lazy" decoding="async" onload="this.naturalWidth > 20 ? this.classList.add('is-loaded') : this.remove()" onerror="this.remove()">` : '';
+    return `<span class="portrait ${cl}" aria-hidden="true"><span class="portrait__cadre"><span class="portrait__initiales">${esc(initiales(a.nom))}</span><span class="portrait__mention">Ex-libris</span>${dos ? `<span class="portrait__dos">${dos}</span>` : ''}</span>${image}</span>`;
 };
 const vide = (titre, texte, lien, libelle) => `<div class="vide"><h3>${titre}</h3><p>${texte}</p>${lien ? `<a href="${lien}" class="btn">${libelle}</a>` : ''}</div>`;
 const shelf = (livres, vt = true) => `<div class="shelf">${livres.map((b) => `<div class="shelf-cell">${bookHTML(b, { vt })}</div>`).join('')}</div>`;
@@ -1185,7 +1189,7 @@ function formLivre(b) {
 VUES.ajouter = () => formLivre(null);
 VUES.modifier = (id) => (livre(id) ? formLivre(livre(id)) : null);
 
-VUES.auteurs = () => `<div class="page"><header class="tete-page"><div><h1>Galerie des auteurs</h1><p>${pl(D.auteurs.length, 'auteur')} au catalogue, par ordre alphabétique. Chaque ex-libris montre les livres de l'auteur présents dans nos rayons.</p></div><a href="#nouvel-auteur" class="btn">Ajouter un auteur</a></header>
+VUES.auteurs = () => `<div class="page"><header class="tete-page"><div><h1>Galerie des auteurs</h1><p>${pl(D.auteurs.length, 'auteur')} au catalogue, par ordre alphabétique.</p></div><a href="#nouvel-auteur" class="btn">Ajouter un auteur</a></header>
     <div class="galerie galerie--grande">${[...D.auteurs].sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map((a) => `<a href="#auteur-${a.id}" class="carte-auteur">${portraitHTML(a)}<div><h3>${esc(a.nom)}</h3><p>${pl(livresAuteur(a.id).length, 'livre')}<br>${esc([a.nat, a.an].filter(Boolean).join(', '))}</p></div></a>`).join('')}</div></div>`;
 
 VUES.auteur = (id) => {
